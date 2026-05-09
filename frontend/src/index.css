@@ -1,0 +1,65 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  /* Material Design 3 Green Palette */
+  --color-primary-50: #e8f5e9;
+  --color-primary-100: #c8e6c9;
+  --color-primary-200: #a5d6a7;
+  --color-primary-300: #81c784;
+  --color-primary-400: #66bb6a;
+  --color-primary-500: #4caf50;
+  --color-primary-600: #43a047;
+  --color-primary-700: #388e3c;
+  --color-primary-800: #2e7d32;
+  --color-primary-900: #1b5e20;
+  --color-primary-950: #0d2e10;
+  
+  /* Headless UI v2.1 Refined Surfaces */
+  --color-brand-bg: #090a08;
+  --color-brand-panel: #141612;
+  --color-brand-border: rgba(255, 255, 255, 0.08);
+  
+  /* M3 Tokens */
+  --color-on-surface: #f1f2eb;
+  --color-on-surface-variant: #919489;
+  --color-primary-container: #2e4d25;
+  --color-on-primary-container: #c4efb3;
+  --color-surface-high: #1c1f18;
+  --color-surface-low: #10120d;
+}
+
+:root {
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+  font-weight: 450;
+  color-scheme: dark;
+  background-color: var(--color-brand-bg);
+  color: var(--color-on-surface);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Ensure full screen occupancy */
+html, body, #root {
+  height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-500);
+}

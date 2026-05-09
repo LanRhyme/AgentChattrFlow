@@ -2187,6 +2187,9 @@ async def rename_agent_label(name: str, request: Request):
     mcp_bridge.migrate_identity(name, new_id)
     # Update sender on all historical messages
     store.rename_sender(name, new_id)
+    # Add a system notification message so agents know their new identity
+    store.add("system", f"Agent '{name}' has been renamed to '{new_id}' ({label}).", 
+              msg_type="system", channel="__all__")
     return JSONResponse({"ok": True, "new_name": new_id})
 
 
