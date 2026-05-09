@@ -72,6 +72,11 @@ export interface SessionTemplate {
   is_custom?: boolean;
 }
 
+export interface Workspace {
+  name: string;
+  path: string;
+}
+
 interface ChatStore {
   messages: Message[];
   agents: Record<string, AgentInfo>;
@@ -88,6 +93,8 @@ interface ChatStore {
   sessions: Record<string, Session>; // channel -> session
   templates: SessionTemplate[];
   soundPrefs: Record<string, string>;
+  workspaces: Workspace[];
+  activeWorkspace: string | null;
   
   // Shared Socket Ref
   socket: WebSocket | null;
@@ -142,6 +149,8 @@ export const useStore = create<ChatStore>((set, get) => ({
   sessions: {},
   templates: [],
   soundPrefs: JSON.parse(localStorage.getItem('agentchattr-sounds') || '{}'),
+  workspaces: [],
+  activeWorkspace: null,
   socket: null,
 
   setSocket: (socket) => set({ socket }),
@@ -175,10 +184,14 @@ export const useStore = create<ChatStore>((set, get) => ({
   setSettings: (settings) => {
       const channels = settings.channels || ['general'];
       const archivedChannels = settings.archived_channels || [];
+      const workspaces = settings.workspaces || [];
+      const activeWorkspace = settings.active_workspace || null;
       set((state) => ({ 
         settings: { ...state.settings, ...settings }, 
         channels,
-        archivedChannels
+        archivedChannels,
+        workspaces,
+        activeWorkspace
       }));
   },
   setCurrentChannel: (currentChannel) => set({ currentChannel }),

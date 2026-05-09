@@ -1,9 +1,10 @@
 import { Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { X, User, RefreshCw, Smartphone, Monitor, Volume2, Globe } from 'lucide-react';
+import { X, User, RefreshCw, Smartphone, Monitor, Volume2, Globe, Terminal } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useTranslation } from 'react-i18next';
+import { ApiAgentManager } from './ApiAgentManager';
 import { Dropdown } from './Dropdown';
 
 export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
@@ -55,6 +56,11 @@ export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
             </div>
         </div>
       )
+    },
+    {
+        title: 'API Intelligence',
+        icon: Terminal,
+        fields: <ApiAgentManager />
     },
     {
         title: t('settings.localization'),

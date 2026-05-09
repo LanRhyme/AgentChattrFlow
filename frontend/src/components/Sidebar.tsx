@@ -1,11 +1,13 @@
 import { useStore } from '../store/useStore';
-import { Hash, Settings, Briefcase, Shield, ChevronRight, Zap, Plus, Archive, Layers } from 'lucide-react';
+import { Hash, Settings, Briefcase, Shield, ChevronRight, Zap, Plus, Archive, Layers, Folder, Terminal, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { JobsPanel } from './JobsPanel';
 import { RulesPanel } from './RulesPanel';
 import { SettingsDialog } from './SettingsDialog';
 import { SessionsPanel } from './SessionsPanel';
 import { ArchiveDialog } from './ArchiveDialog';
+import { AddWorkspaceDialog } from './AddWorkspaceDialog';
+import { LaunchAgentDialog } from './LaunchAgentDialog';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -16,7 +18,7 @@ function cn(...inputs: any[]) {
 }
 
 export const Sidebar = () => {
-  const { channels, currentChannel, setCurrentChannel, agents, settings, status } = useStore();
+  const { channels, currentChannel, setCurrentChannel, agents, settings, status, workspaces, activeWorkspace } = useStore();
   const { sendAction } = useWebSocket();
   const { t } = useTranslation();
   const [isJobsOpen, setIsJobsOpen] = useState(false);
@@ -24,6 +26,8 @@ export const Sidebar = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSessionsOpen, setIsSessionsOpen] = useState(false);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const [isAddWorkspaceOpen, setIsAddWorkspaceOpen] = useState(false);
+  const [isLaunchAgentOpen, setIsLaunchAgentOpen] = useState(false);
 
   const displayUsername = settings.username || 'BEN-ADMIN';
 
@@ -38,6 +42,35 @@ export const Sidebar = () => {
       if (confirm(t('sidebar.archive_channel_confirm', { name }))) {
           sendAction({ type: 'channel_archive', name });
       }
+  };
+
+  const handleSetActiveWorkspace = async (name: string) => {
+    try {
+      await fetch('/api/workspaces/active', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-session-token': (window as any).__SESSION_TOKEN__ || '',
+        },
+        body: JSON.stringify({ name }),
+      });
+    } catch (e) {
+      console.error('Error setting active workspace', e);
+    }
+  };
+
+  const handleDeleteWorkspace = async (name: string) => {
+    if (!confirm(t('common.delete') + ' ' + name + '?')) return;
+    try {
+      await fetch(`/api/workspaces/${name}`, {
+        method: 'DELETE',
+        headers: {
+          'x-session-token': (window as any).__SESSION_TOKEN__ || '',
+        },
+      });
+    } catch (e) {
+      console.error('Error deleting workspace', e);
+    }
   };
 
   return (
@@ -84,6 +117,61 @@ export const Sidebar = () => {
                 </div>
                 <ChevronRight size={14} className="text-brand-border group-hover:text-primary-400 group-hover:translate-x-0.5 transition-all" />
               </button>
+          </div>
+
+          {/* Workspaces Section */}
+          <div className="pt-2">
+            <div className="flex items-center justify-between px-4 mb-3">
+                <h3 className="text-[11px] font-bold text-on-surface-variant/50 uppercase tracking-[0.2em]">
+                  {t('common.workspaces')}
+                </h3>
+                <button 
+                    onClick={() => setIsAddWorkspaceOpen(true)}
+                    className="p-1.5 hover:bg-primary-500/20 text-primary-500 rounded-lg transition-all"
+                    title={t('common.add_workspace')}
+                >
+                    <Plus size={14} strokeWidth={3} />
+                </button>
+            </div>
+            <div className="space-y-1">
+              {workspaces.map((ws) => (
+                <div 
+                    key={ws.name} 
+                    className={cn(
+                        "group flex items-center gap-1 px-1 rounded-xl transition-all",
+                        activeWorkspace === ws.name ? "bg-primary-container/40" : "hover:bg-surface-low"
+                    )}
+                >
+                    <button
+                        onClick={() => handleSetActiveWorkspace(ws.name)}
+                        className={cn(
+                            "flex-1 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all min-w-0 text-left relative",
+                            activeWorkspace === ws.name
+                            ? "text-on-primary-container font-bold"
+                            : "text-on-surface-variant hover:text-on-surface"
+                        )}
+                        title={ws.path}
+                    >
+                        <Folder size={16} className={cn("shrink-0", activeWorkspace === ws.name ? "text-on-primary-container" : "text-brand-border")} />
+                        <span className="truncate">{ws.name}</span>
+                        {activeWorkspace === ws.name && (
+                            <div className="absolute left-0 top-2 bottom-2 w-1 bg-primary-500 rounded-full" />
+                        )}
+                    </button>
+                    <button 
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeleteWorkspace(ws.name);
+                        }}
+                        className="p-2 text-gray-500 hover:text-error opacity-0 group-hover:opacity-100 transition-all rounded-lg hover:bg-error/10 shrink-0 relative z-30"
+                        title={t('common.delete')}
+                    >
+                        <Trash2 size={14} />
+                    </button>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="pt-2">
@@ -154,9 +242,18 @@ export const Sidebar = () => {
           </div>
 
           <div className="pt-2">
-            <h3 className="px-4 text-[11px] font-bold text-on-surface-variant/50 uppercase tracking-[0.2em] mb-3">
-              {t('common.intelligence_grid')}
-            </h3>
+            <div className="flex items-center justify-between px-4 mb-3">
+                <h3 className="text-[11px] font-bold text-on-surface-variant/50 uppercase tracking-[0.2em]">
+                  {t('common.intelligence_grid')}
+                </h3>
+                <button 
+                    onClick={() => setIsLaunchAgentOpen(true)}
+                    className="p-1.5 hover:bg-primary-500/20 text-primary-500 rounded-lg transition-all"
+                    title={t('common.launch_ai')}
+                >
+                    <Terminal size={14} strokeWidth={2.5} />
+                </button>
+            </div>
             <div className="space-y-1">
               {Object.entries(agents).map(([id, info]: [string, any]) => {
                 const isThinking = status?.[id]?.busy;
@@ -164,7 +261,7 @@ export const Sidebar = () => {
                   <div
                     key={id}
                     onClick={() => handleRenameAgent(id, info.label || id)}
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant group cursor-pointer hover:bg-surface-low rounded-xl transition-all active:scale-[0.98]"
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface-variant group cursor-pointer hover:bg-surface-low rounded-xl transition-all active:scale-[0.98]"
                     title={t('common.rename')}
                   >
                     <div className="relative">
@@ -212,6 +309,8 @@ export const Sidebar = () => {
       <SettingsDialog isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <SessionsPanel isOpen={isSessionsOpen} onClose={() => setIsSessionsOpen(false)} />
       <ArchiveDialog isOpen={isArchiveOpen} onClose={() => setIsArchiveOpen(false)} />
+      <AddWorkspaceDialog isOpen={isAddWorkspaceOpen} onClose={() => setIsAddWorkspaceOpen(false)} />
+      <LaunchAgentDialog isOpen={isLaunchAgentOpen} onClose={() => setIsLaunchAgentOpen(false)} />
     </>
   );
 };

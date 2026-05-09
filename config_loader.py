@@ -23,7 +23,39 @@ import sys
 import tomllib
 from pathlib import Path
 
+try:
+    import tomli_w
+except ImportError:
+    tomli_w = None
+
 ROOT = Path(__file__).parent
+
+
+def save_local_config(agents: dict, root: Path | None = None) -> None:
+    """Save API agent definitions to config.local.toml.
+    
+    Only saves agents of type 'api' to keep local config clean.
+    """
+    if tomli_w is None:
+        print("  Error: tomli-w is not installed. API agent persistence failed.")
+        return
+
+    root = root or ROOT
+    local_path = root / "config.local.toml"
+    
+    # Load existing local config to preserve other sections if any
+    local_data = {}
+    if local_path.exists():
+        with open(local_path, "rb") as f:
+            local_data = tomllib.load(f)
+    
+    # Update agents section with provided dict
+    # Filter for API agents only to be safe
+    api_agents = {k: v for k, v in agents.items() if v.get("type") == "api"}
+    local_data["agents"] = api_agents
+    
+    with open(local_path, "wb") as f:
+        tomli_w.dump(local_data, f)
 
 
 # Mapping: env var name → (config section, key, is_int)

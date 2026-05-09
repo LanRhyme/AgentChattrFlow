@@ -56,6 +56,8 @@ room_settings: dict = {
     "history_limit": "all",
     "contrast": "normal",
     "custom_roles": [],
+    "workspaces": [],  # List of {"name": str, "path": str}
+    "active_workspace": None,
 }
 
 # Channel validation
@@ -2275,6 +2277,312 @@ async def heartbeat(agent_name: str, request: Request):
                 with mcp_bridge._presence_lock:
                     mcp_bridge._presence[canonical] = now
     return resp
+
+
+# --- Workspaces API ---
+
+@app.get("/api/workspaces")
+async def get_workspaces():
+    return room_settings.get("workspaces", [])
+
+
+@app.post("/api/workspaces")
+async def add_workspace(request: Request):
+    body = await request.json()
+    name = body.get("name", "").strip()
+    path = body.get("path", "").strip()
+    if not name or not path:
+        return JSONResponse({"error": "name and path required"}, status_code=400)
+
+    # Check if name or path already exists
+    workspaces = room_settings.get("workspaces", [])
+    if any(w["name"] == name for w in workspaces):
+        return JSONResponse({"error": "workspace name already exists"}, status_code=400)
+
+    # Verify path exists
+    p = Path(path)
+    if not p.exists():
+        return JSONResponse({"error": "path does not exist"}, status_code=400)
+
+    new_ws = {"name": name, "path": str(p.resolve())}
+    workspaces.append(new_ws)
+    room_settings["workspaces"] = workspaces
+    if room_settings.get("active_workspace") is None:
+        room_settings["active_workspace"] = new_ws["name"]
+    _save_settings()
+    await broadcast_settings()
+    return JSONResponse(new_ws)
+
+
+@app.delete("/api/workspaces/{name}")
+async def delete_workspace(name: str):
+    workspaces = room_settings.get("workspaces", [])
+    filtered = [w for w in workspaces if w["name"] != name]
+    if len(filtered) == len(workspaces):
+        return JSONResponse({"error": "not found"}, status_code=404)
+
+    room_settings["workspaces"] = filtered
+    if room_settings.get("active_workspace") == name:
+        room_settings["active_workspace"] = filtered[0]["name"] if filtered else None
+
+    _save_settings()
+    await broadcast_settings()
+    return JSONResponse({"ok": True})
+
+
+@app.post("/api/workspaces/active")
+async def set_active_workspace(request: Request):
+    body = await request.json()
+    name = body.get("name")
+    workspaces = room_settings.get("workspaces", [])
+    if not any(w["name"] == name for w in workspaces):
+        return JSONResponse({"error": "not found"}, status_code=404)
+
+    room_settings["active_workspace"] = name
+    _save_settings()
+    await broadcast_settings()
+    return JSONResponse({"ok": True})
+
+
+@app.get("/api/agent-types")
+async def get_agent_types():
+    """Return list of available agent types and modes from config."""
+    agents_cfg = config.get("agents", {})
+    results = []
+    for name, cfg in agents_cfg.items():
+        is_api = cfg.get("type") == "api"
+        color = cfg.get("color", "#4CAF50")
+        label = cfg.get("label", name)
+        
+        # Standard launch
+        results.append({
+            "name": name,
+            "label": label,
+            "color": color,
+            "type": "api" if is_api else "cli"
+        })
+        
+        # Specialized modes
+        if name == "claude":
+            results.append({
+                "name": "claude",
+                "mode": "skip-permissions",
+                "label": f"{label} (Skip Perms)",
+                "color": color,
+                "type": "cli"
+            })
+        elif name == "gemini":
+            results.append({
+                "name": "gemini",
+                "mode": "yolo",
+                "label": f"{label} (YOLO)",
+                "color": color,
+                "type": "cli"
+            })
+        elif name == "qwen" and not is_api:
+             results.append({
+                "name": "qwen",
+                "mode": "yolo",
+                "label": f"{label} (YOLO)",
+                "color": color,
+                "type": "cli"
+            })
+            
+    return results
+
+
+@app.get("/api/config/api-agents")
+async def get_config_api_agents():
+    """Return all API-type agents from the active merged config."""
+    agents_cfg = config.get("agents", {})
+    return {k: v for k, v in agents_cfg.items() if v.get("type") == "api"}
+
+
+@app.post("/api/config/api-agents")
+async def update_api_agents(request: Request):
+    """Update the local API agent definitions and persist to config.local.toml."""
+    from config_loader import save_local_config
+    body = await request.json()
+    new_api_agents = body.get("agents", {})
+    
+    # Validation: ensure all have type="api"
+    for name, cfg in new_api_agents.items():
+        cfg["type"] = "api"
+    
+    # Save to disk
+    save_local_config(new_api_agents)
+    
+    # Update runtime config (in-memory)
+    # We only update the agents section
+    current_agents = config.setdefault("agents", {})
+    
+    # Remove old API agents that aren't in the new list
+    to_remove = [k for k, v in current_agents.items() if v.get("type") == "api" and k not in new_api_agents]
+    for k in to_remove:
+        del current_agents[k]
+        
+    # Add/Update new ones
+    current_agents.update(new_api_agents)
+    
+    # Notify registry of config change
+    if registry:
+        registry.seed(current_agents)
+    
+    return JSONResponse({"ok": True})
+
+
+@app.get("/api/pick-directory")
+async def pick_directory():
+    """Open a native system directory picker and return the selected path."""
+    import subprocess
+    import sys
+
+    try:
+        if sys.platform == "win32":
+            # Use PowerShell to show a FolderBrowserDialog
+            ps_cmd = (
+                "Add-Type -AssemblyName System.Windows.Forms; "
+                "$f = New-Object System.Windows.Forms.FolderBrowserDialog; "
+                "$f.Description = 'Select Workspace Folder'; "
+                "if($f.ShowDialog() -eq 'OK') { $f.SelectedPath }"
+            )
+            result = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps_cmd],
+                capture_output=True, text=True, check=True
+            )
+            path = result.stdout.strip()
+        elif sys.platform == "darwin":
+            # Use AppleScript to pick a folder
+            as_cmd = 'choose folder with prompt "Select Workspace Folder" as string'
+            result = subprocess.run(
+                ["osascript", "-e", as_cmd],
+                capture_output=True, text=True, check=True
+            )
+            # osascript returns path in alias format (e.g., "Macintosh HD:Users:a:Desktop:folder:")
+            # We need to convert it to a POSIX path
+            raw_path = result.stdout.strip()
+            if raw_path:
+                posix_cmd = f'tell application "Finder" to get POSIX path of folder "{raw_path}"'
+                result_posix = subprocess.run(
+                    ["osascript", "-e", posix_cmd],
+                    capture_output=True, text=True, check=True
+                )
+                path = result_posix.stdout.strip()
+            else:
+                path = ""
+        else:
+            # Try zenity on Linux
+            try:
+                result = subprocess.run(
+                    ["zenity", "--file-selection", "--directory", "--title=Select Workspace Folder"],
+                    capture_output=True, text=True, check=True
+                )
+                path = result.stdout.strip()
+            except (FileNotFoundError, subprocess.CalledProcessError):
+                return JSONResponse({"error": "Native picker not supported on this Linux setup. Please enter path manually."}, status_code=501)
+
+        if not path:
+            return JSONResponse({"path": None})
+        
+        return JSONResponse({"path": path})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/launch-agent")
+async def launch_agent(request: Request):
+    """Launch an agent wrapper in a new terminal window."""
+    body = await request.json()
+    agent_name = body.get("agent", "").strip()
+    mode = body.get("mode", "").strip()
+    if not agent_name:
+        return JSONResponse({"error": "agent required"}, status_code=400)
+
+    agent_cfg = config.get("agents", {}).get(agent_name, {})
+    is_api = agent_cfg.get("type") == "api"
+
+    # Get workspace path
+    ws_name = room_settings.get("active_workspace")
+    ws_path = None
+    for w in room_settings.get("workspaces", []):
+        if w["name"] == ws_name:
+            ws_path = w["path"]
+            break
+
+    if not ws_path:
+        # Fallback to current config cwd if no workspace selected
+        ws_path_raw = agent_cfg.get("cwd", ".")
+        ws_path = str((Path(__file__).parent / ws_path_raw).resolve())
+
+    # Trusted folder for Gemini
+    if agent_name == "gemini":
+        try:
+            from wrapper import _ensure_gemini_folder_trusted
+            _ensure_gemini_folder_trusted(Path(ws_path))
+        except Exception as e:
+            log.warning(f"Could not trust folder for Gemini: {e}")
+
+    # Auto-trust for git if needed
+    try:
+        import subprocess
+        subprocess.run(["git", "config", "--global", "--add", "safe.directory", ws_path], capture_output=True)
+    except Exception:
+        pass
+
+    # Launch wrapper.py as a subprocess
+    import sys
+    python_exe = sys.executable
+    
+    if is_api:
+        wrapper_path = str(Path(__file__).parent / "wrapper_api.py")
+        cmd = [python_exe, wrapper_path, agent_name]
+    else:
+        wrapper_path = str(Path(__file__).parent / "wrapper.py")
+        cmd = [python_exe, wrapper_path, agent_name, "--cwd", ws_path]
+        
+        if mode == "skip-permissions" and agent_name == "claude":
+            cmd.append("--dangerously-skip-permissions")
+        elif mode == "yolo" and agent_name in ("gemini", "qwen"):
+            cmd.extend(["--", "--yolo"])
+
+    # Pass along server config flags if overridden
+    if config.get("server", {}).get("data_dir"):
+        cmd.extend(["--data-dir", config["server"]["data_dir"]])
+    if config.get("server", {}).get("port"):
+        cmd.extend(["--port", str(config["server"]["port"])])
+
+    try:
+        import subprocess
+        if sys.platform == "win32":
+            subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+        elif sys.platform == "darwin":
+            # On macOS, use osascript to open a new Terminal and run the command
+            full_cmd = " ".join(f'"{c}"' for c in cmd)
+            script = f'tell application "Terminal" to do script "{full_cmd}"'
+            subprocess.Popen(["osascript", "-e", script])
+        else:
+            # On Linux, try some common terminal emulators
+            terminals = ["x-terminal-emulator", "gnome-terminal", "konsole", "xterm"]
+            launched = False
+            for term in terminals:
+                try:
+                    if term == "gnome-terminal":
+                        subprocess.Popen([term, "--", *cmd])
+                    elif term == "konsole":
+                        subprocess.Popen([term, "-e", *cmd])
+                    else:
+                        subprocess.Popen([term, "-e", *cmd])
+                    launched = True
+                    break
+                except FileNotFoundError:
+                    continue
+            if not launched:
+                 # Fallback to background if no terminal found
+                 subprocess.Popen(cmd)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+    return JSONResponse({"ok": True})
 
 
 # --- Open agent session in terminal ---

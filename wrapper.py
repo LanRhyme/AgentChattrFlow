@@ -579,6 +579,7 @@ def main():
     # launched separately connect to the right instance). Values are consumed
     # by apply_cli_overrides() above; listing here so --help shows them.
     parser.add_argument("--data-dir",      default=None, help="Override server.data_dir (path)")
+    parser.add_argument("--cwd",           default=None, help="Override agent.cwd (path)")
     parser.add_argument("--port",          default=None, help="Override server.port (int)")
     parser.add_argument("--mcp-http-port", default=None, help="Override mcp.http_port (int)")
     parser.add_argument("--mcp-sse-port",  default=None, help="Override mcp.sse_port (int)")
@@ -587,7 +588,7 @@ def main():
 
     agent = args.agent
     agent_cfg = config.get("agents", {}).get(agent, {})
-    cwd = agent_cfg.get("cwd", ".")
+    cwd = args.cwd if args.cwd else agent_cfg.get("cwd", ".")
     command = agent_cfg.get("command", agent)
     data_dir = ROOT / config.get("server", {}).get("data_dir", "./data")
     data_dir.mkdir(parents=True, exist_ok=True)
