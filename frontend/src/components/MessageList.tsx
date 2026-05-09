@@ -17,12 +17,12 @@ const Message = ({ message }: { message: MessageType }) => {
   const { sendAction } = useWebSocket();
   const { t } = useTranslation();
   const lowerSender = message.sender.toLowerCase();
-  const agent = agents[lowerSender];
+  const agent = agents[message.sender]; // Use original case for lookup
   const color = agent?.color || 'var(--color-primary-400)';
   const isSelf = lowerSender === settings.username?.toLowerCase();
   
   // High-fidelity thinking state detection
-  const isThinking = status?.busy?.includes(lowerSender);
+  const isThinking = status?.[message.sender]?.busy;
 
   const handleReply = () => setReplyingTo(message);
   const handleDelete = () => sendAction({ type: 'delete', ids: [message.id] });
@@ -264,7 +264,7 @@ const Message = ({ message }: { message: MessageType }) => {
                                   <button onClick={handleRequestChanges} className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl text-xs font-bold uppercase tracking-widest transition-all active:scale-95">
                                       {t('messages.request_changes')}
                                   </button>
-                                  <button onClick={handleDemote} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded-xl text-xs font-bold uppercase tracking-widest transition-all active:scale-95">
+                                  <button onClick={handleDemote} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95">
                                       {t('messages.dismiss')}
                                   </button>
                               </div>

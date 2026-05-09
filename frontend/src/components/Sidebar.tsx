@@ -16,7 +16,7 @@ function cn(...inputs: any[]) {
 }
 
 export const Sidebar = () => {
-  const { channels, currentChannel, setCurrentChannel, agents, settings } = useStore();
+  const { channels, currentChannel, setCurrentChannel, agents, settings, status } = useStore();
   const { sendAction } = useWebSocket();
   const { t } = useTranslation();
   const [isJobsOpen, setIsJobsOpen] = useState(false);
@@ -158,29 +158,35 @@ export const Sidebar = () => {
               {t('common.intelligence_grid')}
             </h3>
             <div className="space-y-1">
-              {Object.entries(agents).map(([id, info]: [string, any]) => (
-                <div
-                  key={id}
-                  onClick={() => handleRenameAgent(id, info.label || id)}
-                  className="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant group cursor-pointer hover:bg-surface-low rounded-xl transition-all active:scale-[0.98]"
-                  title={t('common.rename')}
-                >
-                  <div className="relative">
-                    <div 
-                        className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(76,175,80,0.3)] group-hover:scale-125 transition-transform" 
-                        style={{ backgroundColor: info.color }}
-                    />
+              {Object.entries(agents).map(([id, info]: [string, any]) => {
+                const isThinking = status?.[id]?.busy;
+                return (
+                  <div
+                    key={id}
+                    onClick={() => handleRenameAgent(id, info.label || id)}
+                    className="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant group cursor-pointer hover:bg-surface-low rounded-xl transition-all active:scale-[0.98]"
+                    title={t('common.rename')}
+                  >
+                    <div className="relative">
+                      <div 
+                          className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(76,175,80,0.3)] group-hover:scale-125 transition-transform" 
+                          style={{ backgroundColor: info.color }}
+                      />
+                    </div>
+                    <span className="font-semibold group-hover:text-on-surface truncate">{info.label || id}</span>
+                    {isThinking && (
+                        <div className="ml-auto flex items-center gap-2">
+                            <span className="text-[9px] font-black text-primary-500 uppercase tracking-tighter animate-pulse">{t('messages.thinking')}</span>
+                            <div className="flex gap-0.5 shrink-0">
+                                <div className="w-1 h-1 rounded-full bg-primary-500 animate-bounce [animation-delay:-0.3s]" />
+                                <div className="w-1 h-1 rounded-full bg-primary-500 animate-bounce [animation-delay:-0.15s]" />
+                                <div className="w-1 h-1 rounded-full bg-primary-500 animate-bounce" />
+                            </div>
+                        </div>
+                    )}
                   </div>
-                  <span className="font-semibold group-hover:text-on-surface truncate">{info.label || id}</span>
-                  {info.state === 'busy' && (
-                      <div className="ml-auto flex gap-0.5 shrink-0">
-                          <div className="w-1 h-1 rounded-full bg-primary-500 animate-bounce [animation-delay:-0.3s]" />
-                          <div className="w-1 h-1 rounded-full bg-primary-500 animate-bounce [animation-delay:-0.15s]" />
-                          <div className="w-1 h-1 rounded-full bg-primary-500 animate-bounce" />
-                      </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
