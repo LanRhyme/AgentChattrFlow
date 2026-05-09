@@ -2,26 +2,55 @@ import { useEffect, useRef } from 'react';
 import { useStore } from '../store/useStore';
 
 export const useWebSocket = () => {
-  const ws = useRef<WebSocket | null>(null);
+  const soundEnabled = useRef(false);
+  const soundCache = useRef<Record<string, HTMLAudioElement>>({});
+
   const { 
     addMessage, 
     setMessages, 
     setStatus, 
-    setAgents,
+    setAgents, 
     setSettings, 
     clearChannel,
     setTyping,
     updateMessage,
-    removeMessage
+    removeMessage,
+    soundPrefs,
+    currentChannel: activeChannel,
+    setSocket,
+    setCurrentChannel
   } = useStore();
 
+  const playSound = (soundName: string) => {
+      if (!soundName || soundName === 'none') return;
+      if (!soundCache.current[soundName]) {
+          soundCache.current[soundName] = new Audio(`/static/sounds/${soundName}.mp3`);
+      }
+      const audio = soundCache.current[soundName];
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+  };
+
+  const playNotificationSound = (sender: string) => {
+      const key = sender.toLowerCase();
+      const soundName = soundPrefs[key] || soundPrefs['default'] || 'soft-chime';
+      playSound(soundName);
+  };
+
+  const playCrossChannelSound = () => {
+      const soundName = soundPrefs['cross-channel'] || 'pluck';
+      playSound(soundName);
+  };
+
   const connect = () => {
+    soundEnabled.current = false;
     const token = (window as any).__SESSION_TOKEN__ || "";
     const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const socket = new WebSocket(`${proto}://${window.location.host}/ws?token=${encodeURIComponent(token)}`);
 
     socket.onopen = () => {
       console.log('WebSocket connected');
+      setSocket(socket);
     };
 
     socket.onmessage = (event) => {
@@ -30,6 +59,7 @@ export const useWebSocket = () => {
     };
 
     socket.onclose = (e) => {
+      setSocket(null);
       if (e.code === 4003) {
         window.location.reload();
         return;
@@ -37,20 +67,31 @@ export const useWebSocket = () => {
       console.log('Disconnected, reconnecting in 2s...');
       setTimeout(connect, 2000);
     };
-
-    ws.current = socket;
   };
 
   const handleEvent = (event: any) => {
     const { 
       updateJob, removeJob, setJobs,
       updateRule, removeRule, setRules,
-      setSchedules 
+      setSchedules, settings
     } = useStore.getState();
 
     switch (event.type) {
       case 'message':
         addMessage(event.data);
+        if (soundEnabled.current) {
+            const msg = event.data;
+            const isSelf = msg.sender.toLowerCase() === settings.username?.toLowerCase();
+            const isSystem = msg.type === 'system' || msg.type === 'join' || msg.type === 'leave' || msg.type === 'summary';
+            
+            if (!isSelf && !isSystem) {
+                if (msg.channel !== activeChannel) {
+                    playCrossChannelSound();
+                } else if (!document.hasFocus()) {
+                    playNotificationSound(msg.sender);
+                }
+            }
+        }
         break;
       case 'edit':
         if (event.message) updateMessage(event.message.id, event.message);
@@ -60,6 +101,9 @@ export const useWebSocket = () => {
         break;
       case 'status':
         setStatus(event.data);
+        if (!soundEnabled.current) {
+            setTimeout(() => { soundEnabled.current = true; }, 1000);
+        }
         break;
       case 'agents':
         if (event.data) setAgents(event.data);
@@ -70,6 +114,11 @@ export const useWebSocket = () => {
         }
         break;
       case 'settings':
+        // If current channel was archived, switch to general
+        const newChannels = event.data.channels || ['general'];
+        if (!newChannels.includes(useStore.getState().currentChannel)) {
+            setCurrentChannel('general');
+        }
         setSettings(event.data);
         break;
       case 'typing':
@@ -98,8 +147,6 @@ export const useWebSocket = () => {
       case 'decisions':
         setRules(event.data);
         break;
-      case 'schedule':
-        break;
       case 'schedules':
         setSchedules(event.data);
         break;
@@ -117,30 +164,22 @@ export const useWebSocket = () => {
   };
 
   useEffect(() => {
-    connect();
-    return () => {
-      ws.current?.close();
-    };
+    // Only connect if not already connecting
+    if (!useStore.getState().socket) {
+        connect();
+    }
   }, []);
 
   const sendMessage = (text: string, channel: string, attachments: any[] = [], replyTo: number | null = null) => {
-    if (ws.current?.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify({
+    useStore.getState().sendAction({
         type: 'message',
         text,
         channel,
         attachments,
         reply_to: replyTo,
         sender: useStore.getState().settings.username || 'user'
-      }));
-    }
+    });
   };
 
-  const sendAction = (payload: any) => {
-      if (ws.current?.readyState === WebSocket.OPEN) {
-          ws.current.send(JSON.stringify(payload));
-      }
-  };
-
-  return { sendMessage, sendAction };
+  return { sendMessage, sendAction: useStore.getState().sendAction };
 };

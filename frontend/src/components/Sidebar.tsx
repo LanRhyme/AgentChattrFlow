@@ -1,10 +1,11 @@
 import { useStore } from '../store/useStore';
-import { Hash, Settings, Briefcase, Shield, ChevronRight, User, Zap } from 'lucide-react';
+import { Hash, Settings, Briefcase, Shield, ChevronRight, Zap, Plus, Archive } from 'lucide-react';
 import { useState } from 'react';
 import { JobsPanel } from './JobsPanel';
 import { RulesPanel } from './RulesPanel';
 import { SettingsDialog } from './SettingsDialog';
 import { SessionsPanel } from './SessionsPanel';
+import { ArchiveDialog } from './ArchiveDialog';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -20,6 +21,7 @@ export const Sidebar = () => {
   const [isRulesOpen, setIsRulesOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSessionsOpen, setIsSessionsOpen] = useState(false);
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
 
   const displayUsername = settings.username || 'BEN-ADMIN';
 
@@ -30,24 +32,21 @@ export const Sidebar = () => {
     }
   };
 
+  const handleArchiveChannel = (name: string) => {
+      if (confirm(`Archive channel #${name}? It will be hidden from the sidebar.`)) {
+          sendAction({ type: 'channel_archive', name });
+      }
+  };
+
   return (
     <>
       <aside className="w-[280px] bg-brand-panel border-r border-brand-border flex flex-col shrink-0 h-full overflow-hidden shadow-xl z-20">
-        {/* Header - M3 Style */}
-        <div className="px-6 py-10">
-            <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-primary-500 rounded-2xl flex items-center justify-center shadow-lg shadow-black/20">
-                    <span className="font-black text-brand-bg text-xl tracking-tighter">A</span>
-                </div>
-                <div>
-                    <h1 className="font-bold text-on-surface text-lg tracking-tight leading-tight">AgentChattr</h1>
-                    <span className="text-[11px] text-primary-400 font-bold uppercase tracking-widest mt-0.5 block">Material Suite</span>
-                </div>
-            </div>
+        <div className="px-8 py-10">
+            <h1 className="font-black text-on-surface text-2xl tracking-tighter leading-none">AgentChattr</h1>
+            <span className="text-[10px] text-primary-500 font-black uppercase tracking-[0.3em] mt-2 block">Neural Suite v4</span>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar px-4 space-y-6 pb-4">
-          {/* Action Cards */}
           <div className="space-y-2">
              <button 
                 onClick={() => setIsSessionsOpen(true)}
@@ -81,35 +80,73 @@ export const Sidebar = () => {
               </button>
           </div>
 
-
-          {/* Channels Section */}
           <div className="pt-2">
-            <h3 className="px-4 text-[11px] font-bold text-on-surface-variant/50 uppercase tracking-[0.2em] mb-3">
-              Neural Channels
-            </h3>
+            <div className="flex items-center justify-between px-4 mb-3">
+                <h3 className="text-[11px] font-bold text-on-surface-variant/50 uppercase tracking-[0.2em]">
+                  Neural Channels
+                </h3>
+                <div className="flex gap-1">
+                    <button 
+                        onClick={() => setIsArchiveOpen(true)}
+                        className="p-1 hover:bg-white/5 text-gray-500 hover:text-amber-500 rounded-md transition-all"
+                        title="View archived channels"
+                    >
+                        <Archive size={14} />
+                    </button>
+                    <button 
+                        onClick={() => {
+                            const name = window.prompt('Enter new channel name (lowercase, no spaces):');
+                            if (name) sendAction({ type: 'channel_create', name: name.trim().toLowerCase() });
+                        }}
+                        className="p-1 hover:bg-primary-500/20 text-primary-500 rounded-md transition-all"
+                        title="Create new channel"
+                    >
+                        <Plus size={14} strokeWidth={3} />
+                    </button>
+                </div>
+            </div>
             <div className="space-y-1">
               {channels.map((channel) => (
-                <button
-                  key={channel}
-                  onClick={() => setCurrentChannel(channel)}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all relative group",
-                    currentChannel === channel
-                      ? "bg-primary-container text-on-primary-container font-bold shadow-sm"
-                      : "text-on-surface-variant hover:text-on-surface hover:bg-surface-low"
-                  )}
+                <div 
+                    key={channel} 
+                    className={cn(
+                        "group flex items-center gap-1 px-1 rounded-xl transition-all",
+                        currentChannel === channel ? "bg-primary-container/40" : "hover:bg-surface-low"
+                    )}
                 >
-                  <Hash size={16} className={cn(currentChannel === channel ? "text-on-primary-container" : "text-brand-border")} />
-                  {channel}
-                  {currentChannel === channel && (
-                      <div className="absolute left-1 top-2 bottom-2 w-1 bg-primary-500 rounded-full" />
-                  )}
-                </button>
+                    <button
+                        onClick={() => setCurrentChannel(channel)}
+                        className={cn(
+                            "flex-1 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all min-w-0 text-left relative",
+                            currentChannel === channel
+                            ? "text-on-primary-container font-bold"
+                            : "text-on-surface-variant hover:text-on-surface"
+                        )}
+                    >
+                        <Hash size={16} className={cn("shrink-0", currentChannel === channel ? "text-on-primary-container" : "text-brand-border")} />
+                        <span className="truncate">{channel}</span>
+                        {currentChannel === channel && (
+                            <div className="absolute left-0 top-2 bottom-2 w-1 bg-primary-500 rounded-full" />
+                        )}
+                    </button>
+                    {channel !== 'general' && (
+                        <button 
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleArchiveChannel(channel);
+                            }}
+                            className="p-2 text-gray-500 hover:text-amber-500 opacity-0 group-hover:opacity-100 transition-all rounded-lg hover:bg-amber-500/10 shrink-0 relative z-30"
+                            title="Archive channel"
+                        >
+                            <Archive size={14} />
+                        </button>
+                    )}
+                </div>
               ))}
             </div>
           </div>
 
-          {/* Agents Section */}
           <div className="pt-2">
             <h3 className="px-4 text-[11px] font-bold text-on-surface-variant/50 uppercase tracking-[0.2em] mb-3">
               Intelligence Grid
@@ -142,22 +179,18 @@ export const Sidebar = () => {
           </div>
         </div>
 
-        {/* User Profile */}
         <div className="p-4 mt-auto bg-black/10">
           <button 
             onClick={() => setIsSettingsOpen(true)}
-            className="w-full flex items-center gap-3 p-3 rounded-[24px] bg-surface-high border border-brand-border hover:bg-primary-container hover:border-primary-500/30 transition-all group"
+            className="w-full flex items-center justify-between p-4 rounded-[24px] bg-surface-high border border-brand-border hover:bg-primary-container hover:border-primary-500/30 transition-all group"
           >
-            <div className="w-10 h-10 rounded-full bg-brand-bg flex items-center justify-center text-on-surface-variant group-hover:text-on-primary-container transition-colors shadow-inner">
-                <User size={20} />
-            </div>
-            <div className="flex-1 text-left min-w-0">
-                <p className="text-xs font-bold text-on-surface leading-none truncate group-hover:text-on-primary-container uppercase tracking-tight">
+            <div className="text-left min-w-0">
+                <p className="text-xs font-black text-on-surface leading-none truncate group-hover:text-on-primary-container uppercase tracking-widest">
                     {displayUsername}
                 </p>
-                <p className="text-[10px] text-on-surface-variant font-medium mt-1 uppercase tracking-tighter truncate group-hover:text-on-primary-container/70">Terminal Operator</p>
+                <p className="text-[9px] text-on-surface-variant font-bold mt-1.5 uppercase tracking-tighter truncate group-hover:text-on-primary-container/70 opacity-60">Terminal Operator</p>
             </div>
-            <Settings size={16} className="text-brand-border group-hover:text-on-primary-container group-hover:rotate-45 transition-all duration-500" />
+            <Settings size={16} className="text-brand-border group-hover:text-on-primary-container group-hover:rotate-45 transition-all duration-500 shrink-0" />
           </button>
         </div>
       </aside>
@@ -166,7 +199,7 @@ export const Sidebar = () => {
       <RulesPanel isOpen={isRulesOpen} onClose={() => setIsRulesOpen(false)} />
       <SettingsDialog isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <SessionsPanel isOpen={isSessionsOpen} onClose={() => setIsSessionsOpen(false)} />
+      <ArchiveDialog isOpen={isArchiveOpen} onClose={() => setIsArchiveOpen(false)} />
     </>
   );
 };
-

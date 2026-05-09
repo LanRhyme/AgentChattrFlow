@@ -1,14 +1,38 @@
 import { Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { X, User, RefreshCw, Smartphone, Monitor } from 'lucide-react';
+import { X, User, RefreshCw, Smartphone, Monitor, Volume2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
-  const { settings, setSettings } = useStore();
+  const { settings, soundPrefs, setSoundPrefs, agents } = useStore();
+  const { sendAction } = useWebSocket();
 
   const handleSave = (key: string, value: any) => {
-    setSettings({ [key]: value });
+    sendAction({ type: 'update_settings', data: { [key]: value } });
   };
+
+  const handleSoundChange = (key: string, value: string) => {
+      const next = { ...soundPrefs, [key]: value };
+      setSoundPrefs(next);
+      
+      // Preview sound
+      if (value !== 'none') {
+          const audio = new Audio(`/static/sounds/${value}.mp3`);
+          audio.play().catch(() => {});
+      }
+  };
+
+  const SOUND_OPTIONS = [
+      { id: 'none', name: 'Silent' },
+      { id: 'soft-chime', name: 'Soft Chime' },
+      { id: 'bright-ping', name: 'Bright Ping' },
+      { id: 'warm-bell', name: 'Warm Bell' },
+      { id: 'gentle-pop', name: 'Gentle Pop' },
+      { id: 'pluck', name: 'Pluck' },
+      { id: 'alert-tone', name: 'Alert Tone' },
+      { id: 'click', name: 'Mechanical Click' },
+  ];
 
   const sections = [
     {
@@ -26,6 +50,48 @@ export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
                     placeholder="BEN-ADMIN..."
                 />
             </div>
+        </div>
+      )
+    },
+    {
+      title: 'Acoustics',
+      icon: Volume2,
+      fields: (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1">Default Notification</label>
+                <select 
+                    value={soundPrefs['default'] || 'soft-chime'}
+                    onChange={(e) => handleSoundChange('default', e.target.value)}
+                    className="w-full bg-white/[0.03] border border-brand-border rounded-[20px] px-5 py-4 text-sm text-gray-100 focus:border-primary-500/50 outline-none appearance-none cursor-pointer"
+                >
+                    {SOUND_OPTIONS.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
+                </select>
+            </div>
+            <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1">Cross-Channel Alert</label>
+                <select 
+                    value={soundPrefs['cross-channel'] || 'pluck'}
+                    onChange={(e) => handleSoundChange('cross-channel', e.target.value)}
+                    className="w-full bg-white/[0.03] border border-brand-border rounded-[20px] px-5 py-4 text-sm text-gray-100 focus:border-primary-500/50 outline-none appearance-none cursor-pointer"
+                >
+                    {SOUND_OPTIONS.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
+                </select>
+            </div>
+            
+            {Object.entries(agents).map(([id, info]) => (
+                <div key={id} className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1">Agent: {info.label || id}</label>
+                    <select 
+                        value={soundPrefs[id] || ''}
+                        onChange={(e) => handleSoundChange(id, e.target.value)}
+                        className="w-full bg-white/[0.03] border border-brand-border rounded-[20px] px-5 py-4 text-sm text-gray-100 focus:border-primary-500/50 outline-none appearance-none cursor-pointer"
+                    >
+                        <option value="">Inherit Default</option>
+                        {SOUND_OPTIONS.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
+                    </select>
+                </div>
+            ))}
         </div>
       )
     },

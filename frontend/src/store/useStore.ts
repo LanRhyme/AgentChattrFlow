@@ -78,6 +78,7 @@ interface ChatStore {
   status: Record<string, any>;
   settings: any;
   channels: string[];
+  archivedChannels: string[];
   currentChannel: string;
   typingAgents: Set<string>;
   jobs: Job[];
@@ -86,8 +87,15 @@ interface ChatStore {
   replyingTo: Message | null;
   sessions: Record<string, Session>; // channel -> session
   templates: SessionTemplate[];
+  soundPrefs: Record<string, string>;
+  
+  // Shared Socket Ref
+  socket: WebSocket | null;
   
   // Actions
+  setSocket: (socket: WebSocket | null) => void;
+  sendAction: (payload: any) => void;
+  
   setMessages: (messages: Message[]) => void;
   addMessage: (message: Message) => void;
   updateMessage: (id: number, updates: Partial<Message>) => void;
@@ -100,6 +108,7 @@ interface ChatStore {
   setTyping: (agent: string, isTyping: boolean) => void;
   setReplyingTo: (message: Message | null) => void;
   renameSender: (oldName: string, newName: string) => void;
+  setSoundPrefs: (prefs: Record<string, string>) => void;
   
   setJobs: (jobs: Job[]) => void;
   updateJob: (job: Job) => void;
@@ -117,12 +126,13 @@ interface ChatStore {
   setTemplates: (templates: SessionTemplate[]) => void;
 }
 
-export const useStore = create<ChatStore>((set) => ({
+export const useStore = create<ChatStore>((set, get) => ({
   messages: [],
   agents: {},
   status: {},
   settings: { username: 'user' },
   channels: ['general'],
+  archivedChannels: [],
   currentChannel: 'general',
   typingAgents: new Set(),
   jobs: [],
@@ -131,6 +141,18 @@ export const useStore = create<ChatStore>((set) => ({
   replyingTo: null,
   sessions: {},
   templates: [],
+  soundPrefs: JSON.parse(localStorage.getItem('agentchattr-sounds') || '{}'),
+  socket: null,
+
+  setSocket: (socket) => set({ socket }),
+  sendAction: (payload) => {
+      const socket = get().socket;
+      if (socket?.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify(payload));
+      } else {
+          console.warn('Socket not open, action ignored:', payload);
+      }
+  },
 
   setMessages: (messages) => set({ messages }),
   addMessage: (message) => set((state) => {
@@ -152,9 +174,11 @@ export const useStore = create<ChatStore>((set) => ({
   setAgents: (agents) => set({ agents }),
   setSettings: (settings) => {
       const channels = settings.channels || ['general'];
+      const archivedChannels = settings.archived_channels || [];
       set((state) => ({ 
         settings: { ...state.settings, ...settings }, 
-        channels 
+        channels,
+        archivedChannels
       }));
   },
   setCurrentChannel: (currentChannel) => set({ currentChannel }),
@@ -168,6 +192,10 @@ export const useStore = create<ChatStore>((set) => ({
   renameSender: (oldName, newName) => set((state) => ({
       messages: state.messages.map(m => m.sender.toLowerCase() === oldName.toLowerCase() ? { ...m, sender: newName } : m)
   })),
+  setSoundPrefs: (soundPrefs) => {
+      localStorage.setItem('agentchattr-sounds', JSON.stringify(soundPrefs));
+      set({ soundPrefs });
+  },
 
   setJobs: (jobs) => set({ jobs }),
   updateJob: (job) => set((state) => {

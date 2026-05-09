@@ -12,11 +12,15 @@ function cn(...inputs: any[]) {
 }
 
 const Message = ({ message }: { message: MessageType }) => {
-  const { agents, settings, setReplyingTo, messages } = useStore();
+  const { agents, settings, setReplyingTo, messages, status } = useStore();
   const { sendAction } = useWebSocket();
-  const agent = agents[message.sender.toLowerCase()];
+  const lowerSender = message.sender.toLowerCase();
+  const agent = agents[lowerSender];
   const color = agent?.color || 'var(--color-primary-400)';
-  const isSelf = message.sender.toLowerCase() === settings.username?.toLowerCase();
+  const isSelf = lowerSender === settings.username?.toLowerCase();
+  
+  // High-fidelity thinking state detection
+  const isThinking = status?.busy?.includes(lowerSender);
 
   const handleReply = () => setReplyingTo(message);
   const handleDelete = () => sendAction({ type: 'delete', ids: [message.id] });
@@ -151,7 +155,7 @@ const Message = ({ message }: { message: MessageType }) => {
       return (
           <div className={cn("flex gap-4 px-10 py-5", isSelf ? "flex-row-reverse" : "flex-row")}>
               <div className="flex flex-col max-w-[85%] lg:max-w-[75%] items-start w-full">
-                  <div className="w-full bg-surface-high border border-brand-border rounded-[24px] overflow-hidden shadow-xl relative">
+                  <div className="w-full bg-surface-high border border-brand-border rounded-[28px] overflow-hidden shadow-xl relative">
                       <div className="absolute top-0 left-0 w-1 h-full bg-amber-500" />
                       <div className="p-5 border-b border-white/5 bg-black/10 flex items-center gap-3">
                           <Zap size={16} className="text-amber-500" />
@@ -237,7 +241,7 @@ const Message = ({ message }: { message: MessageType }) => {
                   </button>
               </div>
               <div className="flex flex-col max-w-[85%] lg:max-w-[75%] items-start w-full">
-                  <div className="w-full bg-surface-high border border-brand-border rounded-[24px] overflow-hidden shadow-lg">
+                  <div className="w-full bg-surface-high border border-brand-border rounded-[28px] overflow-hidden shadow-lg">
                       <div className="p-5 border-b border-white/5 bg-black/10 flex items-center gap-3">
                           <Briefcase size={16} className="text-amber-500" />
                           <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Job Proposal</span>
@@ -299,7 +303,7 @@ const Message = ({ message }: { message: MessageType }) => {
                   </button>
               </div>
               <div className="flex flex-col max-w-[85%] lg:max-w-[75%] items-start w-full">
-                  <div className="w-full bg-surface-high border border-brand-border rounded-[24px] overflow-hidden shadow-lg relative">
+                  <div className="w-full bg-surface-high border border-brand-border rounded-[28px] overflow-hidden shadow-lg relative">
                       <div className="absolute top-0 left-0 w-1 h-full bg-purple-500" />
                       <div className="p-5 border-b border-white/5 bg-black/10 flex items-center gap-3">
                           <Shield size={16} className="text-purple-500" />
@@ -336,7 +340,7 @@ const Message = ({ message }: { message: MessageType }) => {
 
   return (
     <div className={cn(
-        "flex gap-4 group transition-colors px-10 py-5 hover:bg-white/[0.02] relative",
+        "flex gap-4 group transition-colors px-10 py-4 hover:bg-white/[0.02] relative",
         isSelf ? "flex-row-reverse" : "flex-row"
     )}>
       {/* Message Actions */}
@@ -363,25 +367,31 @@ const Message = ({ message }: { message: MessageType }) => {
           "flex flex-col max-w-[85%] lg:max-w-[75%]",
           isSelf ? "items-end" : "items-start"
       )}>
-        <div className="flex items-baseline gap-3 mb-2 px-1">
-          <span className="text-[11px] font-black uppercase tracking-[0.15em] text-on-surface-variant/80" style={{ color: isSelf ? 'var(--color-primary-400)' : color }}>
+        <div className="flex items-baseline gap-3 mb-1.5 px-1">
+          <span className="text-[11px] font-black uppercase tracking-[0.15em] text-on-surface-variant/80 flex items-center gap-2" style={{ color: isSelf ? 'var(--color-primary-400)' : color }}>
             {message.sender}
             {agent?.role && <span className="ml-2 px-1.5 py-0.5 bg-white/5 rounded text-[9px] text-gray-500 border border-white/5">{agent.role}</span>}
+            {isThinking && (
+                <span className="flex items-center gap-1.5 px-2 py-0.5 bg-primary-500/10 rounded-full border border-primary-500/20 animate-pulse">
+                    <span className="w-1 h-1 rounded-full bg-primary-500" />
+                    <span className="text-[8px] font-black text-primary-400 uppercase tracking-tighter">Thinking...</span>
+                </span>
+            )}
           </span>
           <span className="text-[10px] text-gray-600 font-bold tabular-nums opacity-0 group-hover:opacity-100 transition-opacity">{message.time || 'NOW'}</span>
         </div>
         
         <div 
           className={cn(
-            "relative p-5 text-[15px] leading-relaxed shadow-sm flex flex-col gap-3",
+            "relative p-3.5 px-5 text-[15px] leading-relaxed shadow-sm flex flex-col gap-2.5",
             isSelf 
-              ? "bg-primary-container text-on-primary-container rounded-tr-none border border-primary-500/20" 
-              : "bg-surface-high text-on-surface rounded-tl-none border border-brand-border"
+              ? "bg-primary-container text-on-primary-container rounded-[28px] rounded-tr-none border border-primary-500/20" 
+              : "bg-surface-high text-on-surface rounded-[28px] rounded-tl-none border border-brand-border"
           )}
         >
           {/* Render Quoted Reply */}
           {parentMessage && (
-              <div className="mb-2 p-3 rounded-xl bg-black/20 border-l-2 border-primary-500 text-sm cursor-pointer hover:bg-black/30 transition-all">
+              <div className="mb-1 p-3 rounded-2xl bg-black/20 border-l-2 border-primary-500 text-sm cursor-pointer hover:bg-black/30 transition-all">
                   <span className="text-[10px] font-black uppercase tracking-widest text-primary-500 block mb-1">{parentMessage.sender}</span>
                   <span className="text-gray-400 line-clamp-1">{parentMessage.text}</span>
               </div>
@@ -393,13 +403,13 @@ const Message = ({ message }: { message: MessageType }) => {
                       const isImage = att.url && /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(att.url);
                       if (isImage) {
                           return (
-                              <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer" className="block w-48 h-32 rounded-xl overflow-hidden border border-white/10 hover:border-white/20 transition-all shadow-md">
+                              <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer" className="block w-48 h-32 rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all shadow-md">
                                   <img src={att.url} alt={att.name || 'Attachment'} className="w-full h-full object-cover" />
                               </a>
                           );
                       }
                       return (
-                          <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-black/20 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all max-w-[240px]">
+                          <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-2xl bg-black/20 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all max-w-[240px]">
                               <div className="w-10 h-10 shrink-0 bg-white/5 rounded-lg flex items-center justify-center text-primary-400">
                                   <File size={18} />
                               </div>
@@ -416,7 +426,7 @@ const Message = ({ message }: { message: MessageType }) => {
           
           {/* Decision Actions */}
           {message.type === 'decision' && message.metadata?.choices && (
-              <div className="mt-3 pt-3 border-t border-white/10">
+              <div className="mt-2 pt-2 border-t border-white/10">
                   {message.metadata.resolved ? (
                       <div className="text-xs font-bold text-primary-400 bg-primary-500/10 px-3 py-2 rounded-xl inline-flex border border-primary-500/20">
                           Selected: {message.metadata.chosen}

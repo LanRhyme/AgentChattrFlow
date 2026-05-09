@@ -52,6 +52,7 @@ room_settings: dict = {
     "username": "user",
     "font": "sans",
     "channels": ["general"],
+    "archived_channels": [],
     "history_limit": "all",
     "contrast": "normal",
     "custom_roles": [],
@@ -1391,12 +1392,37 @@ async def websocket_endpoint(websocket: WebSocket):
                 name = (event.get("name") or "").strip().lower()
                 if name == "general":
                     continue
-                if name not in room_settings["channels"]:
+                if name in room_settings["channels"]:
+                    room_settings["channels"].remove(name)
+                elif "archived_channels" in room_settings and name in room_settings["archived_channels"]:
+                    room_settings["archived_channels"].remove(name)
+                else:
                     continue
-                room_settings["channels"].remove(name)
                 store.delete_channel(name)
                 import mcp_bridge
                 mcp_bridge.migrate_cursors_delete(name)
+                _save_settings()
+                await broadcast_settings()
+
+            elif event.get("type") == "channel_archive":
+                name = (event.get("name") or "").strip().lower()
+                if name == "general" or name not in room_settings["channels"]:
+                    continue
+                room_settings["channels"].remove(name)
+                if "archived_channels" not in room_settings:
+                    room_settings["archived_channels"] = []
+                if name not in room_settings["archived_channels"]:
+                    room_settings["archived_channels"].append(name)
+                _save_settings()
+                await broadcast_settings()
+
+            elif event.get("type") == "channel_restore":
+                name = (event.get("name") or "").strip().lower()
+                if "archived_channels" not in room_settings or name not in room_settings["archived_channels"]:
+                    continue
+                room_settings["archived_channels"].remove(name)
+                if name not in room_settings["channels"]:
+                    room_settings["channels"].append(name)
                 _save_settings()
                 await broadcast_settings()
 
