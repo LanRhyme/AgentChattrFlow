@@ -1,11 +1,12 @@
 import { Fragment, useState, useEffect, useRef } from 'react';
 import { Dialog, Transition, Tab } from '@headlessui/react';
-import { X, Briefcase, Plus, ChevronRight, LayoutGrid, Timer, History, Trash2, CheckCircle2, Send } from 'lucide-react';
+import { X, Briefcase, Plus, ChevronRight, LayoutGrid, Timer, History, Send, Zap } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import type { Job } from '../store/useStore';
 import { Markdown } from './Markdown';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { useTranslation } from 'react-i18next';
 
 function cn(...inputs: any[]) {
   return twMerge(clsx(inputs));
@@ -13,6 +14,7 @@ function cn(...inputs: any[]) {
 
 export const JobsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const { jobs, currentChannel, settings } = useStore();
+  const { t } = useTranslation();
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [newJobTitle, setNewJobTitle] = useState('');
@@ -27,9 +29,9 @@ export const JobsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   const archivedJobs = filteredJobs.filter(j => j.status === 'archived');
 
   const categories = [
-    { name: 'Backlog', count: openJobs.length, items: openJobs, icon: LayoutGrid },
-    { name: 'Active', count: activeJobs.length, items: activeJobs, icon: Timer },
-    { name: 'Resolved', count: archivedJobs.length, items: archivedJobs, icon: History },
+    { name: t('jobs.backlog'), count: openJobs.length, items: openJobs, icon: LayoutGrid },
+    { name: t('jobs.active'), count: activeJobs.length, items: activeJobs, icon: Timer },
+    { name: t('jobs.resolved'), count: archivedJobs.length, items: archivedJobs, icon: History },
   ];
 
   const fetchJobMessages = async (jobId: number) => {
@@ -98,23 +100,8 @@ export const JobsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
       }
   };
 
-  const handleDeleteJob = async (id: number) => {
-      try {
-          await fetch(`/api/jobs/${id}?permanent=true`, {
-              method: 'DELETE',
-              headers: {
-                  'X-Session-Token': (window as any).__SESSION_TOKEN__ || ''
-              }
-          });
-          if (selectedJob?.id === id) setSelectedJob(null);
-      } catch (err) {
-          console.error(err);
-      }
-  };
-
-  const handleSendJobMessage = async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!newJobMessage.trim() || !selectedJob) return;
+  const handlePostMessage = async () => {
+      if (!selectedJob || !newJobMessage.trim()) return;
       try {
           await fetch(`/api/jobs/${selectedJob.id}/messages`, {
               method: 'POST',
@@ -124,7 +111,7 @@ export const JobsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
               },
               body: JSON.stringify({
                   text: newJobMessage.trim(),
-                  sender: settings.username || 'user'
+                  sender: settings.username
               })
           });
           setNewJobMessage('');
@@ -139,253 +126,276 @@ export const JobsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
       <Dialog as="div" className="relative z-[100]" onClose={onClose}>
         <Transition.Child
           as={Fragment}
-          enter="ease-in-out duration-300"
+          enter="ease-out duration-300"
           enterFrom="opacity-0"
           enterTo="opacity-100"
-          leave="ease-in-out duration-300"
+          leave="ease-in duration-200"
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-brand-bg/80 backdrop-blur-sm transition-opacity" />
+          <div className="fixed inset-0 bg-brand-bg/95 backdrop-blur-md transition-opacity" />
         </Transition.Child>
 
-        <div className="fixed inset-0 overflow-hidden">
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
-              <Transition.Child
-                as={Fragment}
-                enter="transform transition ease-in-out duration-500"
-                enterFrom="translate-x-full"
-                enterTo="translate-x-0"
-                leave="transform transition ease-in-out duration-500"
-                leaveFrom="translate-x-0"
-                leaveTo="translate-x-full"
-              >
-                <Dialog.Panel className="pointer-events-auto w-screen max-w-xl">
-                  <div className="flex h-full flex-col bg-brand-panel shadow-2xl border-l border-brand-border ring-1 ring-white/5">
-                    {/* Header */}
-                    <div className="flex items-center justify-between px-8 py-8 shrink-0">
-                      <div>
-                          <div className="flex items-center gap-2 text-primary-500 mb-1">
-                             <Briefcase size={16} strokeWidth={2.5} />
-                             <span className="text-[11px] font-black uppercase tracking-[0.2em]">Matrix Control</span>
-                          </div>
-                          <Dialog.Title className="text-2xl font-bold text-white tracking-tight">
-                              Jobs Intelligence
-                          </Dialog.Title>
-                      </div>
-                      <button
+        <div className="fixed inset-0 z-10 overflow-hidden">
+          <div className="flex h-full items-center justify-center p-4 sm:p-6 lg:p-8">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-500"
+              enterFrom="opacity-0 scale-95 translate-y-4"
+              enterTo="opacity-100 scale-100 translate-y-0"
+              leave="ease-in duration-300"
+              leaveFrom="opacity-100 scale-100 translate-y-0"
+              leaveTo="opacity-0 scale-95 translate-y-4"
+            >
+              <Dialog.Panel className="flex h-full max-h-[90vh] w-full max-w-6xl transform flex-col overflow-hidden rounded-[40px] bg-brand-panel text-left align-middle shadow-[0_32px_120px_-24px_rgba(0,0,0,0.8)] transition-all border border-brand-border ring-1 ring-white/5">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-brand-border/50 px-10 py-8 shrink-0 bg-white/[0.01]">
+                  <div className="flex items-center gap-5">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-500/10 border border-primary-500/20 text-primary-500 shadow-sm">
+                      <Briefcase size={24} />
+                    </div>
+                    <div>
+                      <Dialog.Title as="h3" className="text-2xl font-black text-white tracking-tight leading-none">
+                        {t('jobs.title')}
+                      </Dialog.Title>
+                      <p className="mt-2 text-[11px] font-bold text-gray-500 uppercase tracking-[0.3em]">
+                        Neural Task Ledger / #{currentChannel}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setIsCreating(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-400 text-brand-bg rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95"
+                    >
+                        <Plus size={16} strokeWidth={3} /> {t('jobs.create_new')}
+                    </button>
+                    <button
                         onClick={onClose}
-                        className="p-3 text-on-surface-variant hover:text-white rounded-full bg-white/5 hover:bg-white/10 transition-all border border-brand-border"
-                      >
-                        <X size={20} />
-                      </button>
+                        className="rounded-full p-3 text-gray-500 hover:bg-white/5 hover:text-white transition-all border border-brand-border"
+                    >
+                        <X size={24} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-1 overflow-hidden">
+                    {/* List Area */}
+                    <div className="w-1/2 flex flex-col border-r border-brand-border/50 bg-black/10">
+                        <Tab.Group>
+                            <Tab.List className="flex gap-2 px-8 py-4 border-b border-brand-border/30">
+                                {categories.map((cat) => (
+                                    <Tab
+                                        key={cat.name}
+                                        className={({ selected }) => cn(
+                                            "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
+                                            selected 
+                                                ? "bg-primary-500/10 text-primary-400 border-primary-500/20" 
+                                                : "text-gray-500 border-transparent hover:text-gray-300 hover:bg-white/5"
+                                        )}
+                                    >
+                                        <cat.icon size={14} />
+                                        {cat.name}
+                                        <span className="ml-1 opacity-40">({cat.count})</span>
+                                    </Tab>
+                                ))}
+                            </Tab.List>
+                            <Tab.Panels className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
+                                {categories.map((cat, idx) => (
+                                    <Tab.Panel key={idx} className="space-y-3 animate-in fade-in slide-in-from-left-4 duration-500">
+                                        {cat.items.length === 0 ? (
+                                            <div className="py-20 text-center opacity-20">
+                                                <Briefcase size={40} className="mx-auto mb-4" />
+                                                <p className="text-xs font-bold uppercase tracking-widest">{t('jobs.no_jobs')}</p>
+                                            </div>
+                                        ) : (
+                                            cat.items.map(job => (
+                                                <button
+                                                    key={job.id}
+                                                    onClick={() => setSelectedJob(job)}
+                                                    className={cn(
+                                                        "w-full text-left p-5 rounded-[24px] border transition-all group relative overflow-hidden",
+                                                        selectedJob?.id === job.id 
+                                                            ? "bg-primary-container border-primary-500/30 shadow-lg" 
+                                                            : "bg-surface-high border-brand-border hover:border-white/10 hover:bg-surface-low"
+                                                    )}
+                                                >
+                                                    <div className="flex items-start justify-between gap-4 mb-3">
+                                                        <h4 className={cn(
+                                                            "text-sm font-bold tracking-tight leading-snug flex-1",
+                                                            selectedJob?.id === job.id ? "text-on-primary-container" : "text-on-surface"
+                                                        )}>
+                                                            {job.title}
+                                                        </h4>
+                                                        <ChevronRight size={16} className={cn(
+                                                            "shrink-0 transition-transform",
+                                                            selectedJob?.id === job.id ? "text-on-primary-container translate-x-1" : "text-brand-border"
+                                                        )} />
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className={cn(
+                                                            "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg border",
+                                                            job.status === 'open' ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
+                                                            job.status === 'done' ? "bg-primary-500/10 text-primary-500 border-primary-500/20" :
+                                                            "bg-gray-500/10 text-gray-500 border-gray-500/20"
+                                                        )}>
+                                                            {job.status}
+                                                        </span>
+                                                        <span className="text-[10px] text-gray-500 font-medium">{new Date(job.created_at).toLocaleDateString()}</span>
+                                                    </div>
+                                                </button>
+                                            ))
+                                        )}
+                                    </Tab.Panel>
+                                ))}
+                            </Tab.Panels>
+                        </Tab.Group>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto custom-scrollbar px-8 flex flex-col">
-                      {selectedJob ? (
-                        <div className="animate-in slide-in-from-right-4 duration-300 flex flex-col flex-1 pb-6">
-                            <button 
-                                onClick={() => setSelectedJob(null)}
-                                className="inline-flex items-center gap-2 text-xs font-bold text-primary-500 hover:text-primary-400 mb-6 bg-primary-500/5 px-3 py-1.5 rounded-full border border-primary-500/20 transition-all self-start shrink-0"
-                            >
-                                <ChevronRight size={14} className="rotate-180" /> Return to Hub
-                            </button>
-                            
-                            <div className="p-6 rounded-[24px] bg-white/[0.03] border border-brand-border relative overflow-hidden mb-6 shadow-inner shrink-0">
-                                <div className="absolute top-0 right-0 p-4 opacity-10">
-                                    <Briefcase size={60} />
-                                </div>
-                                <h3 className="text-xl font-extrabold text-white leading-tight mb-4 relative z-10">{selectedJob.title}</h3>
-                                <div className="flex flex-wrap gap-2 relative z-10 mb-4">
-                                    <div className="px-2 py-0.5 rounded flex items-center bg-primary-500/10 border border-primary-500/20 text-[9px] font-black text-primary-400 uppercase tracking-widest">
-                                        Source: {selectedJob.created_by}
+                    {/* Detail Area */}
+                    <div className="flex-1 flex flex-col bg-brand-bg relative">
+                        {selectedJob ? (
+                            <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in duration-300">
+                                {/* Detail Header */}
+                                <div className="p-10 border-b border-brand-border/30 shrink-0">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-primary-500 bg-primary-500/10 px-2 py-1 rounded border border-primary-500/20">Task ID #{selectedJob.id}</span>
+                                        <div className="h-px flex-1 bg-white/5" />
+                                    </div>
+                                    <h4 className="text-2xl font-black text-white tracking-tight mb-6">{selectedJob.title}</h4>
+                                    
+                                    <div className="flex items-center gap-6">
+                                        <div className="space-y-1">
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">{t('jobs.status')}</p>
+                                            <div className="flex gap-2">
+                                                {['open', 'done', 'archived'].map(s => (
+                                                    <button
+                                                        key={s}
+                                                        onClick={() => handleUpdateStatus(selectedJob.id, s)}
+                                                        className={cn(
+                                                            "px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border",
+                                                            selectedJob.status === s 
+                                                                ? "bg-primary-500 text-brand-bg border-primary-500" 
+                                                                : "bg-white/5 text-gray-500 border-brand-border hover:text-white"
+                                                        )}
+                                                    >
+                                                        {s}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                {selectedJob.body && (
-                                    <div className="prose prose-invert prose-sm max-w-none text-gray-400 relative z-10 bg-black/20 p-4 rounded-xl border border-white/5">
-                                        <Markdown content={selectedJob.body} />
-                                    </div>
-                                )}
 
-                                <div className="absolute bottom-4 right-4 z-10 flex gap-2">
-                                    <button 
-                                        onClick={() => handleUpdateStatus(selectedJob.id, selectedJob.status === 'open' ? 'done' : 'open')}
-                                        className="p-1.5 bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 rounded-lg transition-all"
-                                        title="Toggle Status"
-                                    >
-                                        <CheckCircle2 size={14} />
-                                    </button>
-                                    <button 
-                                        onClick={() => handleDeleteJob(selectedJob.id)}
-                                        className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-all"
-                                        title="Delete Job"
-                                    >
-                                        <Trash2 size={14} />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Job Conversation View */}
-                            <div className="flex-1 overflow-y-auto custom-scrollbar bg-black/10 rounded-[24px] border border-white/5 p-4 flex flex-col gap-3 min-h-[300px]">
-                                {jobMessages.length === 0 ? (
-                                    <div className="m-auto text-center opacity-30">
-                                        <Briefcase size={32} className="mx-auto mb-2" />
-                                        <p className="text-xs font-bold uppercase tracking-widest">No transmissions yet</p>
+                                {/* Feed */}
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-10 space-y-8 bg-black/20">
+                                    <div className="flex items-center gap-4 mb-2">
+                                        <div className="h-px flex-1 bg-white/5" />
+                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-600">{t('jobs.messages')}</p>
+                                        <div className="h-px flex-1 bg-white/5" />
                                     </div>
-                                ) : (
-                                    jobMessages.map((msg, idx) => {
-                                        const isSelf = msg.sender.toLowerCase() === settings.username?.toLowerCase();
-                                        return (
-                                            <div key={idx} className={cn("flex flex-col max-w-[85%]", isSelf ? "self-end items-end" : "self-start items-start")}>
-                                                <span className="text-[9px] font-bold uppercase tracking-widest text-gray-500 mb-1 px-1">{msg.sender}</span>
-                                                <div className={cn(
-                                                    "p-3 text-sm rounded-2xl shadow-sm",
-                                                    isSelf 
-                                                        ? "bg-primary-container text-on-primary-container rounded-tr-none border border-primary-500/20" 
-                                                        : "bg-surface-high text-on-surface rounded-tl-none border border-brand-border"
-                                                )}>
+                                    
+                                    {jobMessages.map((msg, i) => (
+                                        <div key={i} className="group flex gap-5">
+                                            <div className="w-10 h-10 rounded-xl bg-surface-high border border-brand-border flex items-center justify-center text-primary-500 shrink-0">
+                                                <Zap size={18} />
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-baseline gap-3 mb-2">
+                                                    <span className="text-[11px] font-black uppercase tracking-widest text-on-surface-variant">{msg.sender}</span>
+                                                    <span className="text-[9px] text-gray-600 font-bold tabular-nums">{new Date(msg.timestamp).toLocaleTimeString()}</span>
+                                                </div>
+                                                <div className="text-sm text-gray-300 leading-relaxed bg-white/[0.02] border border-white/5 p-4 rounded-2xl group-hover:bg-white/[0.04] transition-all">
                                                     <Markdown content={msg.text} />
                                                 </div>
                                             </div>
-                                        );
-                                    })
-                                )}
-                                <div ref={messagesEndRef} />
+                                        </div>
+                                    ))}
+                                    <div ref={messagesEndRef} />
+                                </div>
+
+                                {/* Detail Input */}
+                                <div className="p-8 border-t border-brand-border/30 bg-black/30">
+                                    <div className="relative group max-w-4xl mx-auto">
+                                        <div className="absolute -inset-1 bg-primary-500/5 rounded-[24px] blur-xl opacity-0 group-focus-within:opacity-100 transition duration-500" />
+                                        <div className="relative flex items-center gap-4 bg-surface-high border border-brand-border group-focus-within:border-primary-500/50 rounded-[20px] p-2 pl-6 transition-all shadow-inner">
+                                            <input 
+                                                value={newJobMessage}
+                                                onChange={(e) => setNewJobMessage(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && handlePostMessage()}
+                                                placeholder={t('jobs.type_message')}
+                                                className="flex-1 bg-transparent border-none focus:ring-0 text-sm text-on-surface placeholder-on-surface-variant/40"
+                                            />
+                                            <button 
+                                                onClick={handlePostMessage}
+                                                className="w-10 h-10 flex items-center justify-center bg-primary-500 hover:bg-primary-400 text-brand-bg rounded-[14px] transition-all active:scale-90"
+                                            >
+                                                <Send size={16} strokeWidth={3} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex-1 flex flex-col items-center justify-center text-center px-12 opacity-20 select-none">
+                                <div className="w-24 h-24 rounded-[40px] bg-white/[0.02] border border-brand-border flex items-center justify-center mb-8">
+                                    <Briefcase size={40} className="text-primary-500" />
+                                </div>
+                                <h3 className="text-2xl font-black tracking-tight text-white mb-3 uppercase tracking-[0.2em]">Void Vector</h3>
+                                <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Select a task from the ledger to inspect its neural grid</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Create Overlay */}
+                <Transition show={isCreating} as={Fragment}>
+                    <div className="absolute inset-0 z-50 flex items-center justify-center p-10 bg-brand-bg/90 backdrop-blur-xl animate-in fade-in duration-300">
+                        <div className="w-full max-w-lg space-y-8 animate-in zoom-in-95 slide-in-from-bottom-8 duration-500">
+                            <div className="text-center">
+                                <div className="w-20 h-20 rounded-[32px] bg-primary-500/10 border border-primary-500/20 flex items-center justify-center text-primary-500 mx-auto mb-6 shadow-glow">
+                                    <Plus size={32} strokeWidth={3} />
+                                </div>
+                                <h4 className="text-3xl font-black text-white tracking-tighter mb-2">{t('jobs.create_new')}</h4>
+                                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.3em]">Neural Task Initialization</p>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1">{t('jobs.status')}</label>
+                                    <input 
+                                        autoFocus
+                                        value={newJobTitle}
+                                        onChange={(e) => setNewJobTitle(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleCreateJob()}
+                                        placeholder={t('jobs.placeholder')}
+                                        className="w-full bg-white/[0.03] border border-brand-border rounded-[24px] px-8 py-6 text-lg text-white placeholder-white/10 focus:border-primary-500/50 focus:bg-white/[0.05] outline-none transition-all shadow-inner"
+                                    />
+                                </div>
                             </div>
 
-                            {/* Job Input */}
-                            <form onSubmit={handleSendJobMessage} className="mt-4 flex gap-3 shrink-0">
-                                <input
-                                    type="text"
-                                    value={newJobMessage}
-                                    onChange={e => setNewJobMessage(e.target.value)}
-                                    placeholder={`Send to @${selectedJob.created_by}...`}
-                                    className="flex-1 bg-surface-high border border-brand-border rounded-xl px-4 text-sm text-white placeholder-gray-600 focus:border-primary-500/50 outline-none"
-                                />
-                                <button
-                                    type="submit"
-                                    disabled={!newJobMessage.trim()}
-                                    className="p-3 bg-primary-500 hover:bg-primary-400 disabled:opacity-20 text-brand-bg rounded-xl transition-all shadow-lg"
+                            <div className="flex gap-4">
+                                <button 
+                                    onClick={() => setIsCreating(false)}
+                                    className="flex-1 py-5 rounded-[24px] bg-white/[0.03] border border-brand-border text-gray-400 text-xs font-black uppercase tracking-widest hover:bg-white/5 hover:text-white transition-all"
                                 >
-                                    <Send size={18} strokeWidth={2.5} />
+                                    {t('common.cancel')}
                                 </button>
-                            </form>
+                                <button 
+                                    onClick={handleCreateJob}
+                                    className="flex-[2] py-5 rounded-[24px] bg-primary-500 text-brand-bg text-xs font-black uppercase tracking-[0.2em] hover:bg-primary-400 transition-all shadow-glow"
+                                >
+                                    {t('common.confirm')}
+                                </button>
+                            </div>
                         </div>
-                      ) : (
-                        <Tab.Group>
-                          <Tab.List className="flex gap-2 p-1.5 rounded-2xl bg-white/5 border border-brand-border mb-10">
-                            {categories.map((category) => (
-                              <Tab
-                                key={category.name}
-                                className={({ selected }) => cn(
-                                  "flex-1 flex items-center justify-center gap-2 rounded-[14px] py-3 text-[11px] font-bold uppercase tracking-wider transition-all outline-none",
-                                   selected 
-                                     ? "bg-primary-500 text-brand-bg shadow-[0_8px_20px_-4px_rgba(76,175,80,0.4)]"
-                                     : "text-on-surface-variant hover:text-white hover:bg-white/5"
-                                )}
-                              >
-                                {({ selected }) => (
-                                    <>
-                                        <category.icon size={14} strokeWidth={selected ? 3 : 2} />
-                                        {category.name}
-                                        <span className={cn(
-                                            "ml-1 text-[10px] opacity-60",
-                                            selected ? "text-brand-bg font-black" : "text-gray-500"
-                                        )}>
-                                          {category.count}
-                                        </span>
-                                    </>
-                                )}
-                              </Tab>
-                            ))}
-                          </Tab.List>
-                          <Tab.Panels>
-                            {categories.map((category, idx) => (
-                              <Tab.Panel key={idx} className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 outline-none pb-12">
-                                {category.items.length === 0 ? (
-                                  <div className="text-center py-32 rounded-[40px] border-2 border-dashed border-white/5 bg-white/[0.01]">
-                                    <p className="text-[11px] font-black text-gray-600 uppercase tracking-[0.3em]">Sector Dormant</p>
-                                  </div>
-                                ) : (
-                                  category.items.map((job) => (
-                                    <div
-                                      key={job.id}
-                                      className="w-full flex items-stretch text-left p-6 rounded-3xl bg-white/[0.03] border border-brand-border hover:bg-white/[0.06] hover:border-primary-500/30 transition-all group shadow-sm hover:shadow-primary-900/10 cursor-pointer relative"
-                                      onClick={() => setSelectedJob(job)}
-                                    >
-                                      <div className="flex-1">
-                                          <div className="flex justify-between items-start gap-4 mb-4">
-                                            <h4 className="text-lg font-bold text-gray-100 group-hover:text-primary-400 transition-colors leading-tight">
-                                              {job.title}
-                                            </h4>
-                                            <ChevronRight size={16} className="text-gray-600 group-hover:text-primary-500 transition-all mt-1" />
-                                          </div>
-                                          <div className="flex items-center justify-between mt-auto">
-                                              <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-tighter bg-black/20 px-2.5 py-1 rounded-lg">
-                                                  <div className="w-1.5 h-1.5 rounded-full bg-primary-500" />
-                                                  {job.created_by}
-                                              </div>
-                                              <div className="text-[10px] font-black text-white/10 italic">SEQ_{job.id}</div>
-                                          </div>
-                                      </div>
-                                    </div>
-                                  ))
-                                )}
-                              </Tab.Panel>
-                            ))}
-                          </Tab.Panels>
-                        </Tab.Group>
-                      )}
-
-                      {/* Create Form */}
-                      {isCreating && !selectedJob && (
-                          <div className="mt-8 mb-12 p-6 bg-white/[0.02] border border-primary-500/30 border-dashed rounded-[24px] animate-in fade-in slide-in-from-bottom-2 duration-300">
-                               <input
-                                  type="text"
-                                  autoFocus
-                                  value={newJobTitle}
-                                  onChange={(e) => setNewJobTitle(e.target.value)}
-                                  onKeyDown={(e) => {
-                                      if (e.key === 'Enter') handleCreateJob();
-                                      if (e.key === 'Escape') setIsCreating(false);
-                                  }}
-                                  placeholder="Enter job sequence title..."
-                                  className="w-full bg-transparent border-none text-lg font-bold text-white placeholder-gray-600 focus:ring-0 mb-4"
-                              />
-                              <div className="flex items-center gap-3">
-                                  <button onClick={handleCreateJob} className="px-4 py-2 bg-primary-500 text-brand-bg rounded-xl text-xs font-bold uppercase tracking-widest transition-all">Execute Sequence</button>
-                                  <button onClick={() => setIsCreating(false)} className="px-4 py-2 bg-white/5 text-gray-400 rounded-xl text-xs font-bold uppercase tracking-widest hover:text-white transition-all">Abort</button>
-                              </div>
-                          </div>
-                      )}
                     </div>
-
-                    {!selectedJob && (
-                        <div className="p-8 bg-brand-panel border-t border-brand-border shrink-0">
-                          <button 
-                              onClick={() => {
-                                  setIsCreating(true);
-                                  setTimeout(() => {
-                                      const el = document.querySelector('.flex-1.overflow-y-auto');
-                                      if (el) el.scrollTop = el.scrollHeight;
-                                  }, 50);
-                              }}
-                              className="w-full flex items-center justify-center gap-3 py-5 bg-white text-brand-bg hover:bg-primary-100 rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl active:scale-[0.98]"
-                          >
-                            <Plus size={18} strokeWidth={3} />
-                            Sync New Job
-                          </button>
-                        </div>
-                    )}
-                  </div>
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
+                </Transition>
+              </Dialog.Panel>
+            </Transition.Child>
           </div>
         </div>
       </Dialog>
     </Transition.Root>
   );
 };
-

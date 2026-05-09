@@ -1,0 +1,161 @@
+{
+  "common": {
+    "orchestration": "Orchestration",
+    "jobs_board": "Jobs Board",
+    "governance": "Rules List",
+    "neural_channels": "Channels",
+    "intelligence_grid": "Agents",
+    "terminal_operator": "Admin",
+    "system_preferences": "Settings",
+    "global_configuration": "Global Configuration",
+    "end_session": "End Session",
+    "neural_node": "Neural Node",
+    "neural_suite": "Neural Suite",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "rename": "Rename",
+    "archive": "Archive",
+    "create": "Create",
+    "delete": "Delete",
+    "attach_file": "Attach file",
+    "newline_hint": "Shift + Enter for newline",
+    "replying_to": "Replying to {{sender}}",
+    "back": "Back"
+  },
+  "input": {
+    "placeholder": "Communicate with #{{channel}}...",
+    "select_agent": "Select Target Agent",
+    "system_commands": "System Commands",
+    "drop_to_upload": "Drop to upload",
+    "commands": {
+      "help": "Display system documentation",
+      "clear": "Wipe neural channel history",
+      "restart": "Reboot all connected agents",
+      "stop": "Halt all agent processing",
+      "kick": "Remove an agent from the channel"
+    }
+  },
+  "messages": {
+    "connected": "connected",
+    "disconnected": "disconnected",
+    "summary": "Summary",
+    "orchestration_initiated": "Orchestration Initiated",
+    "sequence_terminated": "Sequence Terminated",
+    "phase_transition": "Phase Transition",
+    "session_proposal": "Session Proposal",
+    "proposed_by": "Proposed by {{sender}}",
+    "invalid_draft": "Invalid Draft",
+    "run_session": "Run Session",
+    "request_changes": "Request Changes",
+    "dismiss": "Dismiss",
+    "job_proposal": "Job Proposal",
+    "from": "From: {{sender}}",
+    "accept_via_system": "Accept via System",
+    "accepted": "Accepted",
+    "dismissed": "Dismissed",
+    "directive_proposal": "Directive Proposal",
+    "directive": "Directive",
+    "draft": "Draft",
+    "reply": "Reply",
+    "copy": "Copy",
+    "pin_todo": "Pin / Todo",
+    "delete": "Delete",
+    "thinking": "Thinking...",
+    "now": "NOW",
+    "selected": "Selected: {{choice}}",
+    "neural_void": "Neural Void",
+    "awaiting_init": "Awaiting data initialization on #{{channel}}",
+    "typing": "{{users}} typing...",
+    "selected_title": "Selected"
+  },
+  "jobs": {
+    "title": "Jobs Board",
+    "backlog": "Backlog",
+    "active": "Active",
+    "resolved": "Resolved",
+    "create_new": "Create New Job",
+    "placeholder": "Task description...",
+    "status": "Status",
+    "messages": "Intelligence Feed",
+    "type_message": "Append intelligence...",
+    "no_jobs": "No neural tasks found in this channel"
+  },
+  "rules": {
+    "title": "System Rules",
+    "protocol_control": "Protocol Control",
+    "active_protocols": "Active Protocols",
+    "neural_drafts": "Neural Drafts",
+    "no_active": "No active directives found.",
+    "no_drafts": "Draft sequence is empty.",
+    "demote_to_draft": "Demote to Draft",
+    "activate": "Activate",
+    "save_directive": "Save Directive",
+    "new_directive_placeholder": "Define new directive...",
+    "inject_new": "Inject New Directive"
+  },
+  "sessions": {
+    "title": "Orchestration Hub",
+    "neural_engine": "Neural Engine",
+    "back_to_templates": "Back to Templates",
+    "session_goal": "Session Goal",
+    "goal_placeholder": "What should this session achieve?",
+    "cast_config": "Cast Configuration",
+    "launch_sequence": "Launch Sequence",
+    "orchestrator_agent": "Orchestrator Agent",
+    "select_agent_to_draft": "Select an agent to draft...",
+    "requirement_analysis": "Requirement Analysis",
+    "requirement_placeholder": "Describe the specialized session you want to create...",
+    "propose_custom": "Propose Custom Draft",
+    "design_custom": "Design Custom Session",
+    "design_desc": "Collaborate with an agent to draft a new sequence"
+  },
+  "sidebar": {
+    "rename_agent": "Rename agent {{id}}:",
+    "archive_channel_confirm": "Archive channel #{{name}}? It will be hidden from the sidebar.",
+    "new_channel_prompt": "Enter new channel name (lowercase, no spaces):",
+    "view_archived": "View archived channels",
+    "create_channel": "Create new channel"
+  },
+  "app": {
+    "terminate_session_confirm": "Are you sure you want to terminate this orchestration session?",
+    "phase": "Phase",
+    "awaiting": "Awaiting"
+  },
+  "settings": {
+    "identity": "Identity",
+    "acoustics": "Acoustics",
+    "interface": "Interface",
+    "network": "Network",
+    "user_identifier": "User Identifier",
+    "default_notification": "Default Notification",
+    "cross_channel_alert": "Cross-Channel Alert",
+    "typography": "Typography",
+    "visual_depth": "Visual Depth",
+    "history_depth": "History Depth",
+    "neural_sync": "Neural Sync",
+    "confirm_sequence": "Confirm Sequence",
+    "data_archive": "Data Archive (Export)",
+    "localization": "Localization",
+    "interface_language": "Interface Language",
+    "fonts": {
+      "sans": "Modern Sans",
+      "mono": "Technical Mono",
+      "serif": "Classic Serif"
+    },
+    "contrast": {
+      "normal": "Standard",
+      "high": "High Definition"
+    },
+    "history": {
+      "all": "Unlimited",
+      "100": "100 Cycles",
+      "500": "500 Cycles"
+    },
+    "sync": {
+      "event": "Event Driven",
+      "batch10": "Batch 10",
+      "batch20": "Batch 20"
+    }
+  }
+}

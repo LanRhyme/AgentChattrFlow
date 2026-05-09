@@ -3,17 +3,19 @@ import { Dialog, Transition } from '@headlessui/react';
 import { X, Archive, RotateCcw, Trash2, Hash } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { useTranslation } from 'react-i18next';
 
 export const ArchiveDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const { archivedChannels } = useStore();
   const { sendAction } = useWebSocket();
+  const { t } = useTranslation();
 
   const handleRestore = (name: string) => {
       sendAction({ type: 'channel_restore', name });
   };
 
   const handleDelete = (name: string) => {
-      if (confirm(`Are you sure you want to permanently delete channel #${name}? This will wipe all history.`)) {
+      if (confirm(t('sidebar.archive_channel_confirm', { name }))) {
           sendAction({ type: 'channel_delete', name });
       }
   };
@@ -51,7 +53,7 @@ export const ArchiveDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
                   </div>
                   <div>
                       <Dialog.Title as="h3" className="text-xl font-black text-white tracking-tight leading-none">
-                        Archived Channels
+                        {t('sidebar.view_archived')}
                       </Dialog.Title>
                       <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.3em] mt-2">Dormant neural nodes</p>
                   </div>
@@ -88,7 +90,7 @@ export const ArchiveDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
                                 <button 
                                     onClick={() => handleDelete(name)}
                                     className="p-2 text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
-                                    title="Delete permanently"
+                                    title={t('common.delete')}
                                 >
                                     <Trash2 size={16} />
                                 </button>
@@ -104,7 +106,7 @@ export const ArchiveDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
                   className="w-full inline-flex justify-center rounded-[24px] border border-transparent bg-white/[0.05] px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-gray-400 hover:bg-white/10 hover:text-white transition-all"
                   onClick={onClose}
                 >
-                  Close Archive
+                  {t('common.cancel')}
                 </button>
               </div>
             </Dialog.Panel>

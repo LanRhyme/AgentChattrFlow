@@ -3,9 +3,12 @@ import { Dialog, Transition } from '@headlessui/react';
 import { X, Play, Plus, ChevronRight, Zap } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import type { SessionTemplate } from '../store/useStore';
+import { useTranslation } from 'react-i18next';
+import { Dropdown } from './Dropdown';
 
 export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const { templates, setTemplates, currentChannel, settings, agents } = useStore();
+  const { t } = useTranslation();
   const [selectedTemplate, setSelectedJob] = useState<SessionTemplate | null>(null);
   const [goal, setGoal] = useState('');
   const [cast, setCast] = useState<Record<string, string>>({});
@@ -129,10 +132,10 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
                       <div>
                           <div className="flex items-center gap-2 text-primary-500 mb-1">
                              <Zap size={16} strokeWidth={2.5} />
-                             <span className="text-[11px] font-black uppercase tracking-[0.2em]">Neural Engine</span>
+                             <span className="text-[11px] font-black uppercase tracking-[0.2em]">{t('sessions.neural_engine')}</span>
                           </div>
                           <Dialog.Title className="text-2xl font-bold text-white tracking-tight">
-                              Orchestration Hub
+                              {t('sessions.title')}
                           </Dialog.Title>
                       </div>
                       <button
@@ -150,36 +153,33 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
                                 onClick={() => setSelectedJob(null)}
                                 className="inline-flex items-center gap-2 text-xs font-bold text-primary-500 hover:text-primary-400 mb-2 bg-primary-500/5 px-3 py-1.5 rounded-full border border-primary-500/20 transition-all"
                             >
-                                <ChevronRight size={14} className="rotate-180" /> Back to Templates
+                                <ChevronRight size={14} className="rotate-180" /> {t('sessions.back_to_templates')}
                             </button>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1">Session Goal</label>
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1">{t('sessions.session_goal')}</label>
                                 <input
                                     type="text"
                                     value={goal}
                                     onChange={e => setGoal(e.target.value)}
-                                    placeholder="What should this session achieve?"
+                                    placeholder={t('sessions.goal_placeholder')}
                                     className="w-full bg-white/[0.03] border border-brand-border rounded-[20px] px-5 py-4 text-sm text-gray-100 focus:border-primary-500/50 outline-none transition-all shadow-inner"
                                 />
                             </div>
 
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1 block">Cast Configuration</label>
-                                {selectedTemplate.roles.map(role => (
-                                    <div key={role} className="flex items-center justify-between p-4 bg-white/[0.02] border border-brand-border rounded-2xl">
-                                        <span className="text-sm font-bold text-gray-300">{role}</span>
-                                        <select
+                            <div className="space-y-6">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1 block">{t('sessions.cast_config')}</label>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {selectedTemplate.roles.map(role => (
+                                        <Dropdown 
+                                            key={role}
+                                            label={role}
                                             value={cast[role] || ''}
-                                            onChange={e => setCast({ ...cast, [role]: e.target.value })}
-                                            className="bg-brand-bg border border-brand-border rounded-xl px-3 py-1.5 text-xs text-white focus:border-primary-500/50 outline-none"
-                                        >
-                                            {[...availableAgents, settings.username].map(a => (
-                                                <option key={a} value={a}>{a}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                ))}
+                                            onChange={(val) => setCast({ ...cast, [role]: val })}
+                                            options={[...availableAgents, settings.username].map(a => ({ id: a, name: a }))}
+                                        />
+                                    ))}
+                                </div>
                             </div>
 
                             <button
@@ -187,7 +187,7 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
                                 className="w-full flex items-center justify-center gap-3 py-5 bg-primary-500 text-brand-bg hover:bg-primary-400 rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl active:scale-[0.98]"
                             >
                                 <Play size={18} fill="currentColor" />
-                                Launch Sequence
+                                {t('sessions.launch_sequence')}
                             </button>
                         </div>
                       ) : isDesigning ? (
@@ -196,27 +196,23 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
                                 onClick={() => setIsDesigning(false)}
                                 className="inline-flex items-center gap-2 text-xs font-bold text-primary-500 hover:text-primary-400 mb-2 bg-primary-500/5 px-3 py-1.5 rounded-full border border-primary-500/20 transition-all"
                             >
-                                <ChevronRight size={14} className="rotate-180" /> Back
+                                <ChevronRight size={14} className="rotate-180" /> {t('common.back')}
                             </button>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1">Orchestrator Agent</label>
-                                <select
-                                    value={designAgent}
-                                    onChange={e => setDesignDesignAgent(e.target.value)}
-                                    className="w-full bg-white/[0.03] border border-brand-border rounded-[20px] px-5 py-4 text-sm text-white focus:border-primary-500/50 outline-none appearance-none"
-                                >
-                                    <option value="">Select an agent to draft...</option>
-                                    {availableAgents.map(a => <option key={a} value={a}>{a}</option>)}
-                                </select>
-                            </div>
+                            <Dropdown 
+                                label={t('sessions.orchestrator_agent')}
+                                value={designAgent}
+                                onChange={(val) => setDesignDesignAgent(val)}
+                                options={availableAgents.map(a => ({ id: a, name: a }))}
+                                placeholder={t('sessions.select_agent_to_draft')}
+                            />
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1">Requirement Analysis</label>
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1">{t('sessions.requirement_analysis')}</label>
                                 <textarea
                                     value={designDesc}
                                     onChange={e => setDesignDesc(e.target.value)}
-                                    placeholder="Describe the specialized session you want to create..."
+                                    placeholder={t('sessions.requirement_placeholder')}
                                     className="w-full bg-white/[0.03] border border-brand-border rounded-[24px] px-5 py-5 text-sm text-gray-100 focus:border-primary-500/50 outline-none transition-all h-40 resize-none custom-scrollbar"
                                 />
                             </div>
@@ -227,7 +223,7 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
                                 className="w-full flex items-center justify-center gap-3 py-5 bg-white text-brand-bg hover:bg-primary-100 disabled:opacity-20 rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl active:scale-[0.98]"
                             >
                                 <Plus size={18} strokeWidth={3} />
-                                Propose Custom Draft
+                                {t('sessions.propose_custom')}
                             </button>
                         </div>
                       ) : (
@@ -261,8 +257,8 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
                                     <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                                         <Plus size={24} className="text-gray-500 group-hover:text-primary-500" />
                                     </div>
-                                    <h4 className="text-sm font-black uppercase tracking-widest text-gray-500 group-hover:text-white">Design Custom Session</h4>
-                                    <p className="text-[10px] text-gray-600 mt-1 uppercase tracking-tighter">Collaborate with an agent to draft a new sequence</p>
+                                    <h4 className="text-sm font-black uppercase tracking-widest text-gray-500 group-hover:text-white">{t('sessions.design_custom')}</h4>
+                                    <p className="text-[10px] text-gray-600 mt-1 uppercase tracking-tighter">{t('sessions.design_desc')}</p>
                                 </button>
                             </div>
                         </div>

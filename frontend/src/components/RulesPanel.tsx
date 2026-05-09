@@ -3,10 +3,12 @@ import { Dialog, Transition } from '@headlessui/react';
 import { X, Shield, Plus, Trash2, CheckCircle2, Clock, Edit2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { useTranslation } from 'react-i18next';
 
 export const RulesPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const { rules } = useStore();
   const { sendAction } = useWebSocket();
+  const { t } = useTranslation();
   const activeRules = rules.filter(r => r.status === 'active');
   const draftRules = rules.filter(r => r.status === 'draft');
   const [isCreating, setIsCreating] = useState(false);
@@ -79,10 +81,10 @@ export const RulesPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                       <div>
                           <div className="flex items-center gap-2 text-primary-500 mb-1">
                              <Shield size={16} strokeWidth={2.5} />
-                             <span className="text-[11px] font-black uppercase tracking-[0.2em]">Protocol Control</span>
+                             <span className="text-[11px] font-black uppercase tracking-[0.2em]">{t('rules.protocol_control')}</span>
                           </div>
                           <Dialog.Title className="text-2xl font-bold text-white tracking-tight">
-                              System Rules
+                              {t('rules.title')}
                           </Dialog.Title>
                       </div>
                       <button
@@ -97,11 +99,11 @@ export const RulesPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                       <section>
                         <h3 className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-6 px-1">
                           <CheckCircle2 size={12} className="text-primary-500" />
-                          Active Protocols
+                          {t('rules.active_protocols')}
                         </h3>
                         {activeRules.length === 0 ? (
                             <div className="p-8 rounded-3xl border border-dashed border-white/5 bg-white/[0.01] text-center">
-                                <p className="text-xs font-medium text-gray-600">No active directives found.</p>
+                                <p className="text-xs font-medium text-gray-600">{t('rules.no_active')}</p>
                             </div>
                         ) : (
                             <div className="space-y-3">
@@ -116,8 +118,8 @@ export const RulesPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                                                 className="w-full bg-black/20 border border-primary-500/30 rounded-xl p-3 text-sm text-white focus:ring-0 resize-none h-24 custom-scrollbar"
                                             />
                                             <div className="flex gap-2">
-                                                <button onClick={() => saveEdit(rule.id)} className="px-3 py-1.5 bg-primary-500 text-brand-bg rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-primary-400">Save</button>
-                                                <button onClick={() => setEditingRuleId(null)} className="px-3 py-1.5 bg-white/10 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-white/20">Cancel</button>
+                                                <button onClick={() => saveEdit(rule.id)} className="px-3 py-1.5 bg-primary-500 text-brand-bg rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-primary-400">{t('common.save')}</button>
+                                                <button onClick={() => setEditingRuleId(null)} className="px-3 py-1.5 bg-white/10 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-white/20">{t('common.cancel')}</button>
                                             </div>
                                         </div>
                                     ) : (
@@ -126,13 +128,13 @@ export const RulesPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                                                 {rule.text}
                                             </p>
                                             <div className="mt-4 flex items-center gap-4">
-                                                <button onClick={() => updateStatus(rule.id, 'draft')} className="text-[10px] font-black uppercase tracking-widest text-amber-500 hover:text-amber-400 transition-colors">Demote to Draft</button>
+                                                <button onClick={() => updateStatus(rule.id, 'draft')} className="text-[10px] font-black uppercase tracking-widest text-amber-500 hover:text-amber-400 transition-colors">{t('rules.demote_to_draft')}</button>
                                             </div>
                                             <div className="absolute top-4 right-4 flex opacity-0 group-hover:opacity-100 transition-all">
-                                                <button onClick={() => startEdit(rule.id, rule.text)} className="p-2 text-gray-500 hover:text-primary-400 rounded-lg hover:bg-primary-500/10">
+                                                <button onClick={() => startEdit(rule.id, rule.text)} className="p-2 text-gray-500 hover:text-primary-400 rounded-lg hover:bg-primary-500/10" title={t('common.rename')}>
                                                     <Edit2 size={16} />
                                                 </button>
-                                                <button onClick={() => deleteRule(rule.id)} className="p-2 text-gray-500 hover:text-red-400 rounded-lg hover:bg-red-400/10">
+                                                <button onClick={() => deleteRule(rule.id)} className="p-2 text-gray-500 hover:text-red-400 rounded-lg hover:bg-red-400/10" title={t('common.delete')}>
                                                     <Trash2 size={16} />
                                                 </button>
                                             </div>
@@ -147,11 +149,11 @@ export const RulesPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                       <section>
                         <h3 className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-6 px-1">
                           <Clock size={12} className="text-amber-500" />
-                          Neural Drafts
+                          {t('rules.neural_drafts')}
                         </h3>
                         {draftRules.length === 0 ? (
                             <div className="p-8 rounded-3xl border border-dashed border-white/5 bg-white/[0.01] text-center">
-                                <p className="text-xs font-medium text-gray-600">Draft sequence is empty.</p>
+                                <p className="text-xs font-medium text-gray-600">{t('rules.no_drafts')}</p>
                             </div>
                         ) : (
                             <div className="space-y-3">
@@ -166,8 +168,8 @@ export const RulesPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                                                 className="w-full bg-black/20 border border-primary-500/30 rounded-xl p-3 text-sm text-white focus:ring-0 resize-none h-24 custom-scrollbar"
                                             />
                                             <div className="flex gap-2">
-                                                <button onClick={() => saveEdit(rule.id)} className="px-3 py-1.5 bg-primary-500 text-brand-bg rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-primary-400">Save</button>
-                                                <button onClick={() => setEditingRuleId(null)} className="px-3 py-1.5 bg-white/10 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-white/20">Cancel</button>
+                                                <button onClick={() => saveEdit(rule.id)} className="px-3 py-1.5 bg-primary-500 text-brand-bg rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-primary-400">{t('common.save')}</button>
+                                                <button onClick={() => setEditingRuleId(null)} className="px-3 py-1.5 bg-white/10 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-white/20">{t('common.cancel')}</button>
                                             </div>
                                         </div>
                                     ) : (
@@ -176,13 +178,13 @@ export const RulesPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                                                 {rule.text}
                                             </p>
                                             <div className="mt-4 flex items-center gap-4">
-                                                <button onClick={() => updateStatus(rule.id, 'active')} className="text-[10px] font-black uppercase tracking-widest text-primary-500 hover:text-primary-400 transition-colors">Activate</button>
+                                                <button onClick={() => updateStatus(rule.id, 'active')} className="text-[10px] font-black uppercase tracking-widest text-primary-500 hover:text-primary-400 transition-colors">{t('rules.activate')}</button>
                                             </div>
                                             <div className="absolute top-4 right-4 flex opacity-0 group-hover:opacity-100 transition-all">
-                                                <button onClick={() => startEdit(rule.id, rule.text)} className="p-2 text-gray-500 hover:text-primary-400 rounded-lg hover:bg-primary-500/10">
+                                                <button onClick={() => startEdit(rule.id, rule.text)} className="p-2 text-gray-500 hover:text-primary-400 rounded-lg hover:bg-primary-500/10" title={t('common.rename')}>
                                                     <Edit2 size={16} />
                                                 </button>
-                                                <button onClick={() => deleteRule(rule.id)} className="p-2 text-gray-500 hover:text-red-400 rounded-lg hover:bg-red-400/10">
+                                                <button onClick={() => deleteRule(rule.id)} className="p-2 text-gray-500 hover:text-red-400 rounded-lg hover:bg-red-400/10" title={t('common.delete')}>
                                                     <Trash2 size={16} />
                                                 </button>
                                             </div>
@@ -201,12 +203,12 @@ export const RulesPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                                       autoFocus
                                       value={newRuleText}
                                       onChange={(e) => setNewRuleText(e.target.value)}
-                                      placeholder="Define new directive..."
+                                      placeholder={t('rules.new_directive_placeholder')}
                                       className="w-full bg-transparent border-none text-sm text-white placeholder-gray-600 focus:ring-0 resize-none h-24 custom-scrollbar mb-4"
                                   />
                                   <div className="flex items-center gap-3">
-                                      <button onClick={handleCreateRule} className="px-4 py-2 bg-primary-500 text-brand-bg rounded-xl text-xs font-bold uppercase tracking-widest transition-all">Save Directive</button>
-                                      <button onClick={() => setIsCreating(false)} className="px-4 py-2 bg-white/5 text-gray-400 rounded-xl text-xs font-bold uppercase tracking-widest hover:text-white transition-all">Cancel</button>
+                                      <button onClick={handleCreateRule} className="px-4 py-2 bg-primary-500 text-brand-bg rounded-xl text-xs font-bold uppercase tracking-widest transition-all">{t('rules.save_directive')}</button>
+                                      <button onClick={() => setIsCreating(false)} className="px-4 py-2 bg-white/5 text-gray-400 rounded-xl text-xs font-bold uppercase tracking-widest hover:text-white transition-all">{t('common.cancel')}</button>
                                   </div>
                               </div>
                           </section>
@@ -225,7 +227,7 @@ export const RulesPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                         className="w-full flex items-center justify-center gap-3 py-5 bg-primary-600 text-brand-bg hover:bg-primary-500 rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl active:scale-[0.98]"
                       >
                         <Plus size={18} strokeWidth={3} />
-                        Inject New Directive
+                        {t('rules.inject_new')}
                       </button>
                     </div>
                   </div>
@@ -238,5 +240,3 @@ export const RulesPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
     </Transition.Root>
   );
 };
-
-

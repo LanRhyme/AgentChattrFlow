@@ -3,6 +3,7 @@ import { Send, Paperclip, Command, User, Terminal, X, File, Image as ImageIcon, 
 import { useStore } from '../store/useStore';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { useTranslation } from 'react-i18next';
 
 function cn(...inputs: any[]) {
   return twMerge(clsx(inputs));
@@ -24,6 +25,7 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { currentChannel, agents, replyingTo, setReplyingTo } = useStore();
+  const { t } = useTranslation();
   
   // Autocomplete State
   const [suggestionType, setSuggestionType] = useState<'agent' | 'command' | null>(null);
@@ -32,11 +34,11 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
   const [cursorPos, setCursorPos] = useState(0);
 
   const availableCommands = [
-    { name: '/help', desc: 'Display system documentation' },
-    { name: '/clear', desc: 'Wipe neural channel history' },
-    { name: '/restart', desc: 'Reboot all connected agents' },
-    { name: '/stop', desc: 'Halt all agent processing' },
-    { name: '/kick', desc: 'Remove an agent from the channel' },
+    { name: '/help', desc: t('input.commands.help') },
+    { name: '/clear', desc: t('input.commands.clear') },
+    { name: '/restart', desc: t('input.commands.restart') },
+    { name: '/stop', desc: t('input.commands.stop') },
+    { name: '/kick', desc: t('input.commands.kick') },
   ];
 
   const agentSuggestions = Object.keys(agents)
@@ -272,7 +274,7 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
           <div className="absolute bottom-full left-0 mb-4 w-80 bg-brand-panel border border-brand-border rounded-[24px] shadow-[0_16px_40px_-12px_rgba(0,0,0,0.8)] overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 z-50 ring-1 ring-white/5">
               <div className="px-4 py-3 border-b border-white/[0.04] bg-white/[0.01]">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-500">
-                      {suggestionType === 'agent' ? 'Select Target Agent' : 'System Commands'}
+                      {suggestionType === 'agent' ? t('input.select_agent') : t('input.system_commands')}
                   </p>
               </div>
               <div className="max-h-60 overflow-y-auto custom-scrollbar p-2">
@@ -316,7 +318,7 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
           <div className="absolute bottom-full left-0 right-0 mb-4 bg-surface-high border border-brand-border rounded-[20px] shadow-lg p-3 px-5 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2">
               <Reply size={16} className="text-primary-500 shrink-0" />
               <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-black uppercase tracking-widest text-primary-400">Replying to {replyingTo.sender}</p>
+                  <p className="text-[11px] font-black uppercase tracking-widest text-primary-400">{t('common.replying_to', { sender: replyingTo.sender })}</p>
                   <p className="text-sm text-gray-300 truncate">{replyingTo.text}</p>
               </div>
               <button 
@@ -356,14 +358,14 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
                 type="button" 
                 onClick={() => fileInputRef.current?.click()}
                 className="p-2 text-on-surface-variant hover:text-primary-400 hover:bg-white/[0.05] rounded-xl transition-all" 
-                title="Attach file"
+                title={t('common.attach_file')}
             >
                 <Paperclip size={16} />
             </button>
             
             <div className="ml-auto flex items-center gap-3">
                 <span className="text-[9px] text-gray-600 font-black uppercase tracking-[0.2em] flex items-center gap-1.5 opacity-60">
-                    <Command size={10} /> Shift + Enter for newline
+                    <Command size={10} /> {t('common.newline_hint')}
                 </span>
             </div>
         </div>
@@ -401,7 +403,7 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
           {isDragging && (
               <div className="absolute inset-0 bg-primary-500/10 backdrop-blur-sm z-10 flex items-center justify-center">
                   <div className="bg-primary-500 text-brand-bg px-6 py-2 rounded-full font-black text-xs uppercase tracking-widest shadow-xl flex items-center gap-2">
-                      <ImageIcon size={16} /> Drop to upload
+                      <ImageIcon size={16} /> {t('input.drop_to_upload')}
                   </div>
               </div>
           )}
@@ -415,8 +417,8 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
               onClick={handleClick}
               onKeyUp={(e) => setCursorPos(e.currentTarget.selectionStart)}
               onPaste={handlePaste}
-              placeholder={`Communicate with #${currentChannel}...`}
-              className="w-full bg-transparent border-none focus:ring-0 text-[16px] text-on-surface placeholder-on-surface-variant/40 resize-none max-h-60 custom-scrollbar leading-relaxed"
+              placeholder={t('input.placeholder', { channel: currentChannel })}
+              className="w-full bg-transparent border-none focus:ring-0 focus:outline-none text-[16px] text-on-surface placeholder-on-surface-variant/40 resize-none max-h-60 custom-scrollbar leading-relaxed"
             />
           </div>
           <button
@@ -431,5 +433,3 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
     </div>
   );
 };
-
-

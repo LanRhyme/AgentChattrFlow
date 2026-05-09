@@ -6,6 +6,7 @@ import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { File, ArrowRight, ArrowLeft, Briefcase, Shield, CheckCircle, Clock, Reply as ReplyIcon, Trash2, Copy, Pin, Play, Zap, AlertCircle } from 'lucide-react';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { useTranslation } from 'react-i18next';
 
 function cn(...inputs: any[]) {
   return twMerge(clsx(inputs));
@@ -14,6 +15,7 @@ function cn(...inputs: any[]) {
 const Message = ({ message }: { message: MessageType }) => {
   const { agents, settings, setReplyingTo, messages, status } = useStore();
   const { sendAction } = useWebSocket();
+  const { t } = useTranslation();
   const lowerSender = message.sender.toLowerCase();
   const agent = agents[lowerSender];
   const color = agent?.color || 'var(--color-primary-400)';
@@ -96,7 +98,7 @@ const Message = ({ message }: { message: MessageType }) => {
               <div className="bg-white/5 rounded-full px-4 py-1.5 flex items-center gap-2 border border-white/5">
                   {message.type === 'join' ? <ArrowRight size={12} className="text-primary-500" /> : <ArrowLeft size={12} className="text-red-500" />}
                   <span className="text-[10px] font-bold uppercase tracking-widest text-white">
-                      <span style={{ color }}>{message.sender}</span> {message.type === 'join' ? 'connected' : 'disconnected'}
+                      <span style={{ color }}>{message.sender}</span> {message.type === 'join' ? t('messages.connected') : t('messages.disconnected')}
                   </span>
               </div>
           </div>
@@ -109,7 +111,7 @@ const Message = ({ message }: { message: MessageType }) => {
               <div className="max-w-2xl mx-auto bg-surface-high border border-brand-border rounded-3xl p-6 shadow-xl relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-1 h-full bg-primary-500" />
                   <div className="flex items-center gap-3 mb-4">
-                      <div className="px-2 py-1 bg-primary-500/10 text-primary-500 text-[10px] font-black uppercase tracking-widest rounded-lg border border-primary-500/20">Summary</div>
+                      <div className="px-2 py-1 bg-primary-500/10 text-primary-500 text-[10px] font-black uppercase tracking-widest rounded-lg border border-primary-500/20">{t('messages.summary')}</div>
                       <span className="text-xs font-bold text-gray-400 uppercase tracking-widest" style={{ color }}>{message.sender}</span>
                   </div>
                   <div className="text-sm leading-relaxed text-gray-300">
@@ -139,7 +141,7 @@ const Message = ({ message }: { message: MessageType }) => {
                   </div>
                   <div className="min-w-0">
                       <p className="text-xs font-black uppercase tracking-widest leading-none mb-1">
-                          {isStart ? 'Orchestration Initiated' : isEnd ? 'Sequence Terminated' : 'Phase Transition'}
+                          {isStart ? t('messages.orchestration_initiated') : isEnd ? t('messages.sequence_terminated') : t('messages.phase_transition')}
                       </p>
                       <p className="text-sm font-bold text-white truncate">{message.text}</p>
                   </div>
@@ -159,8 +161,8 @@ const Message = ({ message }: { message: MessageType }) => {
                       <div className="absolute top-0 left-0 w-1 h-full bg-amber-500" />
                       <div className="p-5 border-b border-white/5 bg-black/10 flex items-center gap-3">
                           <Zap size={16} className="text-amber-500" />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Session Proposal</span>
-                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-auto" style={{ color }}>Proposed by {message.sender}</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">{t('messages.session_proposal')}</span>
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-auto" style={{ color }}>{t('messages.proposed_by', { sender: message.sender })}</span>
                       </div>
                       <div className="p-6 space-y-6">
                           <div>
@@ -172,7 +174,7 @@ const Message = ({ message }: { message: MessageType }) => {
                               <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400 flex gap-3">
                                   <AlertCircle size={16} className="shrink-0" />
                                   <div>
-                                      <p className="font-black uppercase tracking-widest mb-2">Invalid Draft</p>
+                                      <p className="font-black uppercase tracking-widest mb-2">{t('messages.invalid_draft')}</p>
                                       <ul className="list-disc pl-4 space-y-1">
                                           {meta.errors?.map((e: string, i: number) => <li key={i}>{e}</li>)}
                                       </ul>
@@ -199,15 +201,15 @@ const Message = ({ message }: { message: MessageType }) => {
 
                           <div className="flex flex-wrap gap-3">
                               {meta.valid && (
-                                  <button onClick={handleRunDraft} className="px-5 py-2.5 bg-primary-500 text-brand-bg rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary-400 transition-all flex items-center gap-2">
-                                      <Play size={14} fill="currentColor" /> Run Session
+                                  <button onClick={handleRunDraft} className="px-5 py-2.5 bg-primary-500 text-brand-bg rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary-400 transition-all flex items-center gap-2 active:scale-95">
+                                      <Play size={14} fill="currentColor" /> {t('messages.run_session')}
                                   </button>
                               )}
-                              <button onClick={handleRequestChanges} className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest transition-all">
-                                  Request Changes
+                              <button onClick={handleRequestChanges} className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95">
+                                  {t('messages.request_changes')}
                               </button>
-                              <button onClick={handleDemote} className="px-5 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded-xl text-xs font-black uppercase tracking-widest transition-all">
-                                  Dismiss
+                              <button onClick={handleDemote} className="px-5 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95">
+                                  {t('messages.dismiss')}
                               </button>
                           </div>
                       </div>
@@ -224,19 +226,19 @@ const Message = ({ message }: { message: MessageType }) => {
           <div className={cn("flex gap-4 px-10 py-5 group relative", isSelf ? "flex-row-reverse" : "flex-row")}>
               {/* Message Actions */}
               <div className={cn(
-                  "absolute top-5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1",
+                  "absolute top-5 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center gap-1",
                   isSelf ? "left-10" : "right-10"
               )}>
-                  <button onClick={handleReply} className="p-2 text-gray-500 hover:text-primary-400 hover:bg-white/5 rounded-full transition-all" title="Reply">
+                  <button onClick={handleReply} className="p-2 text-gray-500 hover:text-primary-400 hover:bg-white/5 rounded-full transition-all" title={t('messages.reply')}>
                       <ReplyIcon size={16} />
                   </button>
-                  <button onClick={handleCopy} className="p-2 text-gray-500 hover:text-primary-400 hover:bg-white/5 rounded-full transition-all" title="Copy">
+                  <button onClick={handleCopy} className="p-2 text-gray-500 hover:text-primary-400 hover:bg-white/5 rounded-full transition-all" title={t('messages.copy')}>
                       <Copy size={16} />
                   </button>
-                  <button onClick={handleTodoToggle} className="p-2 text-gray-500 hover:text-primary-400 hover:bg-white/5 rounded-full transition-all" title="Pin / Todo">
+                  <button onClick={handleTodoToggle} className="p-2 text-gray-500 hover:text-primary-400 hover:bg-white/5 rounded-full transition-all" title={t('messages.pin_todo')}>
                       <Pin size={16} />
                   </button>
-                  <button onClick={handleDelete} className="p-2 text-gray-500 hover:text-red-500 hover:bg-white/5 rounded-full transition-all" title="Delete">
+                  <button onClick={handleDelete} className="p-2 text-gray-500 hover:text-red-500 hover:bg-white/5 rounded-full transition-all" title={t('messages.delete')}>
                       <Trash2 size={16} />
                   </button>
               </div>
@@ -244,8 +246,8 @@ const Message = ({ message }: { message: MessageType }) => {
                   <div className="w-full bg-surface-high border border-brand-border rounded-[28px] overflow-hidden shadow-lg">
                       <div className="p-5 border-b border-white/5 bg-black/10 flex items-center gap-3">
                           <Briefcase size={16} className="text-amber-500" />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Job Proposal</span>
-                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-auto" style={{ color }}>From: {message.sender}</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">{t('messages.job_proposal')}</span>
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-auto" style={{ color }}>{t('messages.from', { sender: message.sender })}</span>
                       </div>
                       <div className="p-6 space-y-4">
                           <h4 className="text-lg font-bold text-white leading-tight">{meta.title}</h4>
@@ -256,19 +258,19 @@ const Message = ({ message }: { message: MessageType }) => {
                           )}
                           {isPending ? (
                               <div className="flex flex-wrap gap-3 pt-2">
-                                  <button onClick={handleDemote} className="px-4 py-2 bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 border border-primary-500/30 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2">
-                                      <CheckCircle size={14} /> Accept via System
+                                  <button onClick={handleDemote} className="px-4 py-2 bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 border border-primary-500/30 rounded-xl text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 active:scale-95">
+                                      <CheckCircle size={14} /> {t('messages.accept_via_system')}
                                   </button>
-                                  <button onClick={handleRequestChanges} className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl text-xs font-bold uppercase tracking-widest transition-all">
-                                      Request Changes
+                                  <button onClick={handleRequestChanges} className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl text-xs font-bold uppercase tracking-widest transition-all active:scale-95">
+                                      {t('messages.request_changes')}
                                   </button>
-                                  <button onClick={handleDemote} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded-xl text-xs font-bold uppercase tracking-widest transition-all">
-                                      Dismiss
+                                  <button onClick={handleDemote} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded-xl text-xs font-bold uppercase tracking-widest transition-all active:scale-95">
+                                      {t('messages.dismiss')}
                                   </button>
                               </div>
                           ) : (
                               <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-widest bg-black/20 px-3 py-2 rounded-xl inline-flex border border-white/5">
-                                  <Clock size={14} /> {meta.status === 'accepted' ? 'Accepted' : 'Dismissed'}
+                                  <Clock size={14} /> {meta.status === 'accepted' ? t('messages.accepted') : t('messages.dismissed')}
                               </div>
                           )}
                       </div>
@@ -286,19 +288,19 @@ const Message = ({ message }: { message: MessageType }) => {
           <div className={cn("flex gap-4 px-10 py-5 group relative", isSelf ? "flex-row-reverse" : "flex-row")}>
               {/* Message Actions */}
               <div className={cn(
-                  "absolute top-5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1",
+                  "absolute top-5 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center gap-1",
                   isSelf ? "left-10" : "right-10"
               )}>
-                  <button onClick={handleReply} className="p-2 text-gray-500 hover:text-primary-400 hover:bg-white/5 rounded-full transition-all" title="Reply">
+                  <button onClick={handleReply} className="p-2 text-gray-500 hover:text-primary-400 hover:bg-white/5 rounded-full transition-all" title={t('messages.reply')}>
                       <ReplyIcon size={16} />
                   </button>
-                  <button onClick={handleCopy} className="p-2 text-gray-500 hover:text-primary-400 hover:bg-white/5 rounded-full transition-all" title="Copy">
+                  <button onClick={handleCopy} className="p-2 text-gray-500 hover:text-primary-400 hover:bg-white/5 rounded-full transition-all" title={t('messages.copy')}>
                       <Copy size={16} />
                   </button>
-                  <button onClick={handleTodoToggle} className="p-2 text-gray-500 hover:text-primary-400 hover:bg-white/5 rounded-full transition-all" title="Pin / Todo">
+                  <button onClick={handleTodoToggle} className="p-2 text-gray-500 hover:text-primary-400 hover:bg-white/5 rounded-full transition-all" title={t('messages.pin_todo')}>
                       <Pin size={16} />
                   </button>
-                  <button onClick={handleDelete} className="p-2 text-gray-500 hover:text-red-500 hover:bg-white/5 rounded-full transition-all" title="Delete">
+                  <button onClick={handleDelete} className="p-2 text-gray-500 hover:text-red-500 hover:bg-white/5 rounded-full transition-all" title={t('messages.delete')}>
                       <Trash2 size={16} />
                   </button>
               </div>
@@ -307,8 +309,8 @@ const Message = ({ message }: { message: MessageType }) => {
                       <div className="absolute top-0 left-0 w-1 h-full bg-purple-500" />
                       <div className="p-5 border-b border-white/5 bg-black/10 flex items-center gap-3">
                           <Shield size={16} className="text-purple-500" />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-purple-500">Directive Proposal</span>
-                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-auto" style={{ color }}>From: {message.sender}</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-purple-500">{t('messages.directive_proposal')}</span>
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-auto" style={{ color }}>{t('messages.from', { sender: message.sender })}</span>
                       </div>
                       <div className="p-6 space-y-4">
                           <div className="text-sm font-medium text-white italic pl-4 border-l-2 border-white/10">
@@ -316,14 +318,14 @@ const Message = ({ message }: { message: MessageType }) => {
                           </div>
                           {isPending ? (
                               <div className="flex flex-wrap gap-3 pt-2">
-                                  <button onClick={handleDemote} className="px-4 py-2 bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 border border-primary-500/30 rounded-xl text-xs font-bold uppercase tracking-widest transition-all">
-                                      Accept via System
+                                  <button onClick={handleDemote} className="px-4 py-2 bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 border border-primary-500/30 rounded-xl text-xs font-bold uppercase tracking-widest transition-all active:scale-95">
+                                      {t('messages.accept_via_system')}
                                   </button>
-                                  <button onClick={handleRequestChanges} className="px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/30 rounded-xl text-xs font-bold uppercase tracking-widest transition-all">
-                                      Draft
+                                  <button onClick={handleRequestChanges} className="px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/30 rounded-xl text-xs font-bold uppercase tracking-widest transition-all active:scale-95">
+                                      {t('messages.draft')}
                                   </button>
-                                  <button onClick={handleDemote} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded-xl text-xs font-bold uppercase tracking-widest transition-all">
-                                      Dismiss
+                                  <button onClick={handleDemote} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded-xl text-xs font-bold uppercase tracking-widest transition-all active:scale-95">
+                                      {t('messages.dismiss')}
                                   </button>
                               </div>
                           ) : (
@@ -345,19 +347,19 @@ const Message = ({ message }: { message: MessageType }) => {
     )}>
       {/* Message Actions */}
       <div className={cn(
-          "absolute top-5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1",
+          "absolute top-5 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center gap-1",
           isSelf ? "left-10" : "right-10"
       )}>
-          <button onClick={handleReply} className="p-2 text-gray-500 hover:text-primary-400 hover:bg-white/5 rounded-full transition-all" title="Reply">
+          <button onClick={handleReply} className="p-2 text-gray-500 hover:text-primary-400 hover:bg-white/5 rounded-full transition-all" title={t('messages.reply')}>
               <ReplyIcon size={16} />
           </button>
-          <button onClick={handleCopy} className="p-2 text-gray-500 hover:text-primary-400 hover:bg-white/5 rounded-full transition-all" title="Copy">
+          <button onClick={handleCopy} className="p-2 text-gray-500 hover:text-primary-400 hover:bg-white/5 rounded-full transition-all" title={t('messages.copy')}>
               <Copy size={16} />
           </button>
-          <button onClick={handleTodoToggle} className="p-2 text-gray-500 hover:text-primary-400 hover:bg-white/5 rounded-full transition-all" title="Pin / Todo">
+          <button onClick={handleTodoToggle} className="p-2 text-gray-500 hover:text-primary-400 hover:bg-white/5 rounded-full transition-all" title={t('messages.pin_todo')}>
               <Pin size={16} />
           </button>
-          <button onClick={handleDelete} className="p-2 text-gray-500 hover:text-red-500 hover:bg-white/5 rounded-full transition-all" title="Delete">
+          <button onClick={handleDelete} className="p-2 text-gray-500 hover:text-red-500 hover:bg-white/5 rounded-full transition-all" title={t('messages.delete')}>
               <Trash2 size={16} />
           </button>
       </div>
@@ -374,16 +376,16 @@ const Message = ({ message }: { message: MessageType }) => {
             {isThinking && (
                 <span className="flex items-center gap-1.5 px-2 py-0.5 bg-primary-500/10 rounded-full border border-primary-500/20 animate-pulse">
                     <span className="w-1 h-1 rounded-full bg-primary-500" />
-                    <span className="text-[8px] font-black text-primary-400 uppercase tracking-tighter">Thinking...</span>
+                    <span className="text-[8px] font-black text-primary-400 uppercase tracking-tighter">{t('messages.thinking')}</span>
                 </span>
             )}
           </span>
-          <span className="text-[10px] text-gray-600 font-bold tabular-nums opacity-0 group-hover:opacity-100 transition-opacity">{message.time || 'NOW'}</span>
+          <span className="text-[10px] text-gray-600 font-bold tabular-nums opacity-0 group-hover:opacity-100 transition-opacity">{message.time || t('messages.now')}</span>
         </div>
         
         <div 
           className={cn(
-            "relative p-3.5 px-5 text-[15px] leading-relaxed shadow-sm flex flex-col gap-2.5",
+            "relative p-3.5 px-5 text-[15px] leading-relaxed shadow-sm flex flex-col gap-2.5 transition-all duration-300",
             isSelf 
               ? "bg-primary-container text-on-primary-container rounded-[28px] rounded-tr-none border border-primary-500/20" 
               : "bg-surface-high text-on-surface rounded-[28px] rounded-tl-none border border-brand-border"
@@ -391,7 +393,7 @@ const Message = ({ message }: { message: MessageType }) => {
         >
           {/* Render Quoted Reply */}
           {parentMessage && (
-              <div className="mb-1 p-3 rounded-2xl bg-black/20 border-l-2 border-primary-500 text-sm cursor-pointer hover:bg-black/30 transition-all">
+              <div className="mb-1 p-3 rounded-2xl bg-black/20 border-l-2 border-primary-500 text-sm cursor-pointer hover:bg-black/30 transition-all active:scale-[0.98]">
                   <span className="text-[10px] font-black uppercase tracking-widest text-primary-500 block mb-1">{parentMessage.sender}</span>
                   <span className="text-gray-400 line-clamp-1">{parentMessage.text}</span>
               </div>
@@ -403,13 +405,13 @@ const Message = ({ message }: { message: MessageType }) => {
                       const isImage = att.url && /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(att.url);
                       if (isImage) {
                           return (
-                              <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer" className="block w-48 h-32 rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all shadow-md">
+                              <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer" className="block w-48 h-32 rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all shadow-md active:scale-95">
                                   <img src={att.url} alt={att.name || 'Attachment'} className="w-full h-full object-cover" />
                               </a>
                           );
                       }
                       return (
-                          <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-2xl bg-black/20 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all max-w-[240px]">
+                          <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-2xl bg-black/20 border border-white/5 hover:bg-black/30 hover:border-white/10 transition-all max-w-[240px] active:scale-95">
                               <div className="w-10 h-10 shrink-0 bg-white/5 rounded-lg flex items-center justify-center text-primary-400">
                                   <File size={18} />
                               </div>
@@ -429,7 +431,7 @@ const Message = ({ message }: { message: MessageType }) => {
               <div className="mt-2 pt-2 border-t border-white/10">
                   {message.metadata.resolved ? (
                       <div className="text-xs font-bold text-primary-400 bg-primary-500/10 px-3 py-2 rounded-xl inline-flex border border-primary-500/20">
-                          Selected: {message.metadata.chosen}
+                          {t('messages.selected', { choice: message.metadata.chosen })}
                       </div>
                   ) : (
                       <div className="flex flex-wrap gap-2">
@@ -437,7 +439,7 @@ const Message = ({ message }: { message: MessageType }) => {
                               <button 
                                   key={idx} 
                                   onClick={() => handleResolveDecision(choice)}
-                                  className="px-3 py-1.5 bg-white/5 hover:bg-primary-500/20 text-white hover:text-primary-400 border border-white/10 hover:border-primary-500/30 rounded-xl text-xs font-bold transition-all"
+                                  className="px-3 py-1.5 bg-white/5 hover:bg-primary-500/20 text-white hover:text-primary-400 border border-white/10 hover:border-primary-500/30 rounded-xl text-xs font-bold transition-all active:scale-95"
                               >
                                   {choice}
                               </button>
@@ -454,6 +456,7 @@ const Message = ({ message }: { message: MessageType }) => {
 
 export const MessageList = () => {
   const { messages, currentChannel, status } = useStore();
+  const { t } = useTranslation();
   const filteredMessages = messages.filter(m => m.channel === currentChannel);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -466,12 +469,12 @@ export const MessageList = () => {
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar pt-6 pb-16 flex flex-col">
       {filteredMessages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center px-12 opacity-20 select-none m-auto">
+          <div className="h-full flex flex-col items-center justify-center text-center px-12 opacity-20 select-none m-auto animate-in fade-in zoom-in duration-700">
               <div className="w-20 h-20 rounded-[32px] bg-white/[0.02] border border-brand-border flex items-center justify-center mb-6">
                   <Markdown content="✨" />
               </div>
-              <h3 className="text-2xl font-black tracking-tight text-white mb-2 uppercase tracking-[0.2em]">Neural Void</h3>
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Awaiting data initialization on #{currentChannel}</p>
+              <h3 className="text-2xl font-black tracking-tight text-white mb-2 uppercase tracking-[0.2em]">{t('messages.neural_void')}</h3>
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-500">{t('messages.awaiting_init', { channel: currentChannel })}</p>
           </div>
       ) : (
           <div className="flex flex-col">
@@ -483,14 +486,14 @@ export const MessageList = () => {
       
       {/* Typing Indicator */}
       {activeTyping.length > 0 && (
-          <div className="px-10 py-2 flex items-center gap-3 opacity-60 animate-in fade-in duration-300">
+          <div className="px-10 py-2 flex items-center gap-3 opacity-60 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="flex gap-1">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-bounce [animation-delay:-0.3s]" />
                   <div className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-bounce [animation-delay:-0.15s]" />
                   <div className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-bounce" />
               </div>
               <span className="text-[10px] font-black uppercase tracking-widest text-primary-400">
-                  {activeTyping.join(', ')} typing...
+                  {t('messages.typing', { users: activeTyping.join(', ') })}
               </span>
           </div>
       )}

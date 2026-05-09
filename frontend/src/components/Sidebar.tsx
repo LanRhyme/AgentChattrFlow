@@ -1,5 +1,5 @@
 import { useStore } from '../store/useStore';
-import { Hash, Settings, Briefcase, Shield, ChevronRight, Zap, Plus, Archive } from 'lucide-react';
+import { Hash, Settings, Briefcase, Shield, ChevronRight, Zap, Plus, Archive, Layers } from 'lucide-react';
 import { useState } from 'react';
 import { JobsPanel } from './JobsPanel';
 import { RulesPanel } from './RulesPanel';
@@ -9,6 +9,7 @@ import { ArchiveDialog } from './ArchiveDialog';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { useTranslation } from 'react-i18next';
 
 function cn(...inputs: any[]) {
   return twMerge(clsx(inputs));
@@ -17,6 +18,7 @@ function cn(...inputs: any[]) {
 export const Sidebar = () => {
   const { channels, currentChannel, setCurrentChannel, agents, settings } = useStore();
   const { sendAction } = useWebSocket();
+  const { t } = useTranslation();
   const [isJobsOpen, setIsJobsOpen] = useState(false);
   const [isRulesOpen, setIsRulesOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -26,14 +28,14 @@ export const Sidebar = () => {
   const displayUsername = settings.username || 'BEN-ADMIN';
 
   const handleRenameAgent = (id: string, currentLabel: string) => {
-    const newLabel = window.prompt(`Rename agent ${id}:`, currentLabel);
+    const newLabel = window.prompt(t('sidebar.rename_agent', { id }), currentLabel);
     if (newLabel !== null && newLabel.trim() !== currentLabel) {
       sendAction({ type: 'rename_agent', name: id, label: newLabel.trim() });
     }
   };
 
   const handleArchiveChannel = (name: string) => {
-      if (confirm(`Archive channel #${name}? It will be hidden from the sidebar.`)) {
+      if (confirm(t('sidebar.archive_channel_confirm', { name }))) {
           sendAction({ type: 'channel_archive', name });
       }
   };
@@ -41,65 +43,69 @@ export const Sidebar = () => {
   return (
     <>
       <aside className="w-[280px] bg-brand-panel border-r border-brand-border flex flex-col shrink-0 h-full overflow-hidden shadow-xl z-20">
-        <div className="px-8 py-10">
-            <h1 className="font-black text-on-surface text-2xl tracking-tighter leading-none">AgentChattr</h1>
-            <span className="text-[10px] text-primary-500 font-black uppercase tracking-[0.3em] mt-2 block">Neural Suite v4</span>
+        <div className="px-8 py-10 group cursor-default">
+            <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary-500/20 flex items-center justify-center text-primary-500 group-hover:rotate-12 transition-transform duration-500">
+                    <Layers size={18} />
+                </div>
+                <h1 className="font-black text-on-surface text-2xl tracking-tighter leading-none">AgentChattrFlow</h1>
+            </div>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar px-4 space-y-6 pb-4">
           <div className="space-y-2">
              <button 
                 onClick={() => setIsSessionsOpen(true)}
-                className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-high rounded-2xl transition-all group border border-transparent hover:border-brand-border shadow-sm"
+                className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-high rounded-2xl transition-all group border border-transparent hover:border-brand-border shadow-sm active:scale-[0.98]"
               >
                 <div className="flex items-center gap-3">
-                    <Zap size={18} className="text-primary-400 group-hover:text-primary-300" />
-                    <span className="font-semibold tracking-wide">Orchestration</span>
+                    <Zap size={18} className="text-primary-400 group-hover:text-primary-300 group-hover:animate-pulse" />
+                    <span className="font-semibold tracking-wide">{t('common.orchestration')}</span>
                 </div>
-                <ChevronRight size={14} className="text-brand-border group-hover:text-primary-400" />
+                <ChevronRight size={14} className="text-brand-border group-hover:text-primary-400 group-hover:translate-x-0.5 transition-all" />
               </button>
              <button 
                 onClick={() => setIsJobsOpen(true)}
-                className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-high rounded-2xl transition-all group border border-transparent hover:border-brand-border shadow-sm"
+                className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-high rounded-2xl transition-all group border border-transparent hover:border-brand-border shadow-sm active:scale-[0.98]"
               >
                 <div className="flex items-center gap-3">
                     <Briefcase size={18} className="text-primary-400 group-hover:text-primary-300" />
-                    <span className="font-semibold tracking-wide">Jobs Board</span>
+                    <span className="font-semibold tracking-wide">{t('common.jobs_board')}</span>
                 </div>
-                <ChevronRight size={14} className="text-brand-border group-hover:text-primary-400" />
+                <ChevronRight size={14} className="text-brand-border group-hover:text-primary-400 group-hover:translate-x-0.5 transition-all" />
               </button>
               <button 
                 onClick={() => setIsRulesOpen(true)}
-                className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-high rounded-2xl transition-all group border border-transparent hover:border-brand-border shadow-sm"
+                className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-high rounded-2xl transition-all group border border-transparent hover:border-brand-border shadow-sm active:scale-[0.98]"
               >
                 <div className="flex items-center gap-3">
                     <Shield size={18} className="text-primary-400 group-hover:text-primary-300" />
-                    <span className="font-semibold tracking-wide">Governance</span>
+                    <span className="font-semibold tracking-wide">{t('common.governance')}</span>
                 </div>
-                <ChevronRight size={14} className="text-brand-border group-hover:text-primary-400" />
+                <ChevronRight size={14} className="text-brand-border group-hover:text-primary-400 group-hover:translate-x-0.5 transition-all" />
               </button>
           </div>
 
           <div className="pt-2">
             <div className="flex items-center justify-between px-4 mb-3">
                 <h3 className="text-[11px] font-bold text-on-surface-variant/50 uppercase tracking-[0.2em]">
-                  Neural Channels
+                  {t('common.neural_channels')}
                 </h3>
                 <div className="flex gap-1">
                     <button 
                         onClick={() => setIsArchiveOpen(true)}
-                        className="p-1 hover:bg-white/5 text-gray-500 hover:text-amber-500 rounded-md transition-all"
-                        title="View archived channels"
+                        className="p-1.5 hover:bg-white/5 text-gray-500 hover:text-amber-500 rounded-lg transition-all"
+                        title={t('sidebar.view_archived')}
                     >
                         <Archive size={14} />
                     </button>
                     <button 
                         onClick={() => {
-                            const name = window.prompt('Enter new channel name (lowercase, no spaces):');
+                            const name = window.prompt(t('sidebar.new_channel_prompt'));
                             if (name) sendAction({ type: 'channel_create', name: name.trim().toLowerCase() });
                         }}
-                        className="p-1 hover:bg-primary-500/20 text-primary-500 rounded-md transition-all"
-                        title="Create new channel"
+                        className="p-1.5 hover:bg-primary-500/20 text-primary-500 rounded-lg transition-all"
+                        title={t('sidebar.create_channel')}
                     >
                         <Plus size={14} strokeWidth={3} />
                     </button>
@@ -137,7 +143,7 @@ export const Sidebar = () => {
                                 handleArchiveChannel(channel);
                             }}
                             className="p-2 text-gray-500 hover:text-amber-500 opacity-0 group-hover:opacity-100 transition-all rounded-lg hover:bg-amber-500/10 shrink-0 relative z-30"
-                            title="Archive channel"
+                            title={t('common.archive')}
                         >
                             <Archive size={14} />
                         </button>
@@ -149,19 +155,19 @@ export const Sidebar = () => {
 
           <div className="pt-2">
             <h3 className="px-4 text-[11px] font-bold text-on-surface-variant/50 uppercase tracking-[0.2em] mb-3">
-              Intelligence Grid
+              {t('common.intelligence_grid')}
             </h3>
             <div className="space-y-1">
               {Object.entries(agents).map(([id, info]: [string, any]) => (
                 <div
                   key={id}
                   onClick={() => handleRenameAgent(id, info.label || id)}
-                  className="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant group cursor-pointer hover:bg-surface-low rounded-xl transition-all"
-                  title="Click to rename agent"
+                  className="flex items-center gap-3 px-4 py-2 text-sm text-on-surface-variant group cursor-pointer hover:bg-surface-low rounded-xl transition-all active:scale-[0.98]"
+                  title={t('common.rename')}
                 >
                   <div className="relative">
                     <div 
-                        className="w-2 h-2 rounded-full shadow-[0_0_8px_rgba(76,175,80,0.3)]" 
+                        className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(76,175,80,0.3)] group-hover:scale-125 transition-transform" 
                         style={{ backgroundColor: info.color }}
                     />
                   </div>
@@ -182,13 +188,13 @@ export const Sidebar = () => {
         <div className="p-4 mt-auto bg-black/10">
           <button 
             onClick={() => setIsSettingsOpen(true)}
-            className="w-full flex items-center justify-between p-4 rounded-[24px] bg-surface-high border border-brand-border hover:bg-primary-container hover:border-primary-500/30 transition-all group"
+            className="w-full flex items-center justify-between p-4 rounded-[24px] bg-surface-high border border-brand-border hover:bg-primary-container hover:border-primary-500/30 transition-all group active:scale-95"
           >
             <div className="text-left min-w-0">
                 <p className="text-xs font-black text-on-surface leading-none truncate group-hover:text-on-primary-container uppercase tracking-widest">
                     {displayUsername}
                 </p>
-                <p className="text-[9px] text-on-surface-variant font-bold mt-1.5 uppercase tracking-tighter truncate group-hover:text-on-primary-container/70 opacity-60">Terminal Operator</p>
+                <p className="text-[9px] text-on-surface-variant font-bold mt-1.5 uppercase tracking-tighter truncate group-hover:text-on-primary-container/70 opacity-60">{t('common.terminal_operator')}</p>
             </div>
             <Settings size={16} className="text-brand-border group-hover:text-on-primary-container group-hover:rotate-45 transition-all duration-500 shrink-0" />
           </button>

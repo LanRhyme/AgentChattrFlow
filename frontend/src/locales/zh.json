@@ -1,0 +1,161 @@
+{
+  "common": {
+    "orchestration": "任务编排",
+    "jobs_board": "任务看板",
+    "governance": "规则列表",
+    "neural_channels": "频道列表",
+    "intelligence_grid": "智能体列表",
+    "terminal_operator": "管理员",
+    "system_preferences": "系统设置",
+    "global_configuration": "全局配置",
+    "end_session": "终止会话",
+    "neural_node": "当前节点",
+    "neural_suite": "智能协作套件",
+    "confirm": "确定",
+    "cancel": "取消",
+    "save": "保存",
+    "rename": "重命名",
+    "archive": "归档",
+    "create": "新建",
+    "delete": "删除",
+    "attach_file": "上传文件",
+    "newline_hint": "Shift + Enter 换行",
+    "replying_to": "回复 {{sender}}",
+    "back": "返回"
+  },
+  "input": {
+    "placeholder": "与 #{{channel}} 通信...",
+    "select_agent": "选择目标智能体",
+    "system_commands": "系统命令",
+    "drop_to_upload": "松开上传",
+    "commands": {
+      "help": "显示系统文档",
+      "clear": "清空频道历史",
+      "restart": "重启所有连接的智能体",
+      "stop": "停止所有正在进行的任务",
+      "kick": "从频道中移除智能体"
+    }
+  },
+  "messages": {
+    "connected": "已上线",
+    "disconnected": "已离线",
+    "summary": "摘要",
+    "orchestration_initiated": "编排任务已启动",
+    "sequence_terminated": "任务流已终止",
+    "phase_transition": "阶段转换",
+    "session_proposal": "会话提议",
+    "proposed_by": "提议人: {{sender}}",
+    "invalid_draft": "无效草案",
+    "run_session": "启动会话",
+    "request_changes": "请求修改",
+    "dismiss": "忽略",
+    "job_proposal": "任务提议",
+    "from": "来自: {{sender}}",
+    "accept_via_system": "接受提议",
+    "accepted": "已接受",
+    "dismissed": "已忽略",
+    "directive_proposal": "指令提议",
+    "directive": "指令",
+    "draft": "草案",
+    "reply": "回复",
+    "copy": "复制内容",
+    "pin_todo": "标记待办",
+    "delete": "彻底删除",
+    "thinking": "思考中...",
+    "now": "刚刚",
+    "selected": "已选: {{choice}}",
+    "neural_void": "空空如也",
+    "awaiting_init": "等待 #{{channel}} 频道的数据初始化",
+    "typing": "{{users}} 正在输入...",
+    "selected_title": "已选择"
+  },
+  "jobs": {
+    "title": "任务看板",
+    "backlog": "待处理",
+    "active": "进行中",
+    "resolved": "已完成",
+    "create_new": "新建任务",
+    "placeholder": "任务描述...",
+    "status": "状态",
+    "messages": "情报流",
+    "type_message": "追加进展...",
+    "no_jobs": "当前频道暂无任务"
+  },
+  "rules": {
+    "title": "规则列表",
+    "protocol_control": "规约控制",
+    "active_protocols": "生效中的规约",
+    "neural_drafts": "草案列表",
+    "no_active": "暂无生效中的指令。",
+    "no_drafts": "草案列表为空。",
+    "demote_to_draft": "降级为草案",
+    "activate": "激活指令",
+    "save_directive": "保存指令",
+    "new_directive_placeholder": "定义新的指令...",
+    "inject_new": "注入新指令"
+  },
+  "sessions": {
+    "title": "编排中心",
+    "neural_engine": "编排引擎",
+    "back_to_templates": "返回模板列表",
+    "session_goal": "会话目标",
+    "goal_placeholder": "本次会话希望达成什么目标？",
+    "cast_config": "角色分配",
+    "launch_sequence": "启动任务流",
+    "orchestrator_agent": "执行智能体",
+    "select_agent_to_draft": "选择一个智能体来起草...",
+    "requirement_analysis": "需求分析",
+    "requirement_placeholder": "描述你想要创建的特定会话...",
+    "propose_custom": "提交自定义草案",
+    "design_custom": "设计自定义会话",
+    "design_desc": "与智能体协作，起草一套全新的任务流序列"
+  },
+  "sidebar": {
+    "rename_agent": "重命名智能体 {{id}}:",
+    "archive_channel_confirm": "确定归档频道 #{{name}}？归档后将从侧边栏隐藏。",
+    "new_channel_prompt": "输入新频道名称（小写，不含空格）：",
+    "view_archived": "查看已归档频道",
+    "create_channel": "创建新频道"
+  },
+  "app": {
+    "terminate_session_confirm": "确定要终止当前的编排任务吗？",
+    "phase": "阶段",
+    "awaiting": "等待"
+  },
+  "settings": {
+    "identity": "个人身份",
+    "acoustics": "音效提示",
+    "interface": "界面显示",
+    "network": "网络与同步",
+    "user_identifier": "用户标识 (ID)",
+    "default_notification": "默认通知音",
+    "cross_channel_alert": "跨频道警报音",
+    "typography": "字体排版",
+    "visual_depth": "视觉深度",
+    "history_depth": "历史回溯深度",
+    "neural_sync": "同步策略",
+    "confirm_sequence": "应用更改",
+    "data_archive": "数据归档导出",
+    "localization": "语言设置",
+    "interface_language": "界面语言",
+    "fonts": {
+      "sans": "现代无衬线 (推荐)",
+      "mono": "技术等宽",
+      "serif": "经典衬线"
+    },
+    "contrast": {
+      "normal": "标准",
+      "high": "高清晰度 (高对比)"
+    },
+    "history": {
+      "all": "不限制 (全量)",
+      "100": "最近 100 周期",
+      "500": "最近 500 周期"
+    },
+    "sync": {
+      "event": "实时 (事件驱动)",
+      "batch10": "批处理 (10条)",
+      "batch20": "批处理 (20条)"
+    }
+  }
+}
