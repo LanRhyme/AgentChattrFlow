@@ -68,6 +68,208 @@ const Message = ({ message }: { message: MessageType }) => {
       );
   }
 
+  if (message.type === 'job_proposal') {
+    const meta = message.metadata || {};
+    const isPending = meta.status === 'pending';
+    return (
+        <div className="px-4 sm:px-10 py-4">
+            <div className={cn(
+                "max-w-2xl bg-surface-high border rounded-[32px] overflow-hidden transition-all shadow-lg",
+                isPending ? "border-primary/30" : "border-brand-border/30 opacity-80"
+            )}>
+                <div className="p-6 sm:p-8">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded-lg bg-primary/10 border border-primary/20 text-[10px] font-black text-primary uppercase tracking-widest">{t('messages.job_proposal')}</span>
+                            <span className="text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-tighter" style={{ color }}>{message.sender}</span>
+                        </div>
+                    </div>
+                    <h4 className="text-lg font-bold text-on-surface mb-2">{meta.title}</h4>
+                    <div className="text-sm text-on-surface-variant/80 leading-relaxed">
+                        <Markdown content={meta.body || message.text} />
+                    </div>
+                    
+                    {isPending ? (
+                        <div className="mt-8 flex flex-wrap gap-2">
+                            <button 
+                                onClick={() => sendAction({ type: 'proposal_resolve', id: message.id, action: 'accept' })}
+                                className="px-4 py-2 bg-primary text-brand-bg rounded-xl text-xs font-black uppercase tracking-widest hover:opacity-90 transition-all active:scale-95"
+                            >
+                                {t('messages.accept_via_system')}
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    const feedback = window.prompt(t('messages.request_changes'));
+                                    if (feedback) sendAction({ type: 'message', text: `@${message.sender} ${t('messages.request_changes')}: ${feedback}`, reply_to: message.id, channel: message.channel });
+                                }}
+                                className="px-4 py-2 bg-on-surface/5 text-on-surface rounded-xl text-xs font-black uppercase tracking-widest hover:bg-on-surface/10 transition-all border border-brand-border"
+                            >
+                                {t('messages.request_changes')}
+                            </button>
+                            <button 
+                                onClick={() => sendAction({ type: 'proposal_resolve', id: message.id, action: 'dismiss' })}
+                                className="px-4 py-2 text-on-surface-variant/50 hover:text-on-surface rounded-xl text-xs font-black uppercase tracking-widest transition-all"
+                            >
+                                {t('messages.dismiss')}
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="mt-6 pt-6 border-t border-brand-border/30">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-primary/60">
+                                {meta.status === 'accepted' ? t('messages.accepted') : t('messages.dismissed')}
+                            </span>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+  }
+
+  if (message.type === 'session_draft') {
+    const meta = message.metadata || {};
+    const tmpl = meta.template || {};
+    const isPending = meta.valid && !meta.resolved;
+    return (
+        <div className="px-4 sm:px-10 py-4">
+            <div className={cn(
+                "max-w-2xl bg-surface-high border rounded-[32px] overflow-hidden transition-all shadow-lg",
+                isPending ? "border-primary/30" : "border-brand-border/30 opacity-80"
+            )}>
+                <div className="p-6 sm:p-8">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded-lg bg-primary/10 border border-primary/20 text-[10px] font-black text-primary uppercase tracking-widest">{t('messages.session_proposal')}</span>
+                            <span className="text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-tighter" style={{ color }}>{message.sender}</span>
+                        </div>
+                    </div>
+                    <h4 className="text-lg font-bold text-on-surface mb-2">{tmpl.name}</h4>
+                    <p className="text-xs text-on-surface-variant/50 mb-6">{tmpl.description}</p>
+                    
+                    <div className="space-y-4">
+                        {tmpl.phases?.map((p: any, i: number) => (
+                            <div key={i} className="flex gap-4">
+                                <div className="w-6 h-6 rounded-full bg-on-surface/5 flex items-center justify-center text-[10px] font-bold text-primary shrink-0 border border-brand-border/50">{i + 1}</div>
+                                <div className="min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-xs font-bold text-on-surface">{p.name}</span>
+                                        <div className="flex gap-1">
+                                            {p.participants?.map((role: string) => (
+                                                <span key={role} className="px-1.5 py-0.5 bg-primary/5 rounded text-[8px] font-black text-primary/60 border border-primary/10 uppercase tracking-tighter">{role}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <p className="text-[11px] text-on-surface-variant/40 italic line-clamp-2">{p.prompt}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {!meta.valid && (
+                         <div className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl">
+                            <p className="text-xs font-bold text-red-500 mb-2 uppercase tracking-widest">{t('messages.invalid_draft')}</p>
+                            <ul className="text-[11px] text-red-400 space-y-1">
+                                {meta.errors?.map((e: string, i: number) => <li key={i}>• {e}</li>)}
+                            </ul>
+                        </div>
+                    )}
+
+                    {isPending ? (
+                        <div className="mt-8 flex flex-wrap gap-2">
+                            <button 
+                                onClick={() => sendAction({ type: 'session_proposal_resolve', id: message.id, action: 'run' })}
+                                className="px-4 py-2 bg-primary text-brand-bg rounded-xl text-xs font-black uppercase tracking-widest hover:opacity-90 transition-all active:scale-95"
+                            >
+                                {t('messages.run_session')}
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    const feedback = window.prompt(t('messages.request_changes'));
+                                    if (feedback) sendAction({ type: 'message', text: `@${message.sender} Please revise session draft: ${feedback}\n\nCurrent draft:\n\`\`\`session\n${JSON.stringify(tmpl)}\n\`\`\``, channel: message.channel });
+                                }}
+                                className="px-4 py-2 bg-on-surface/5 text-on-surface rounded-xl text-xs font-black uppercase tracking-widest hover:bg-on-surface/10 transition-all border border-brand-border"
+                            >
+                                {t('messages.request_changes')}
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    fetch(`/api/messages/${message.id}/demote`, { 
+                                        method: 'POST', 
+                                        headers: { 'X-Session-Token': (window as any).__SESSION_TOKEN__ || '' } 
+                                    });
+                                }}
+                                className="px-4 py-2 text-on-surface-variant/50 hover:text-on-surface rounded-xl text-xs font-black uppercase tracking-widest transition-all"
+                            >
+                                {t('messages.dismiss')}
+                            </button>
+                        </div>
+                    ) : meta.resolved && (
+                        <div className="mt-6 pt-6 border-t border-brand-border/30">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-primary/60">
+                                {t('messages.accepted')}
+                            </span>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+  }
+
+  if (message.type === 'rule_proposal') {
+    const meta = message.metadata || {};
+    const isPending = meta.status === 'pending';
+    return (
+        <div className="px-4 sm:px-10 py-4">
+            <div className={cn(
+                "max-w-2xl bg-surface-high border rounded-[32px] overflow-hidden transition-all shadow-lg",
+                isPending ? "border-primary/30" : "border-brand-border/30 opacity-80"
+            )}>
+                <div className="p-6 sm:p-8">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded-lg bg-primary/10 border border-primary/20 text-[10px] font-black text-primary uppercase tracking-widest">{t('messages.directive_proposal')}</span>
+                            <span className="text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-tighter" style={{ color }}>{message.sender}</span>
+                        </div>
+                    </div>
+                    <div className="text-[15px] text-on-surface leading-relaxed italic border-l-2 border-primary/30 pl-4 py-1">
+                        {meta.text || message.text}
+                    </div>
+                    
+                    {isPending ? (
+                        <div className="mt-8 flex flex-wrap gap-2">
+                            <button 
+                                onClick={() => sendAction({ type: 'rule_proposal_resolve', id: message.id, action: 'activate' })}
+                                className="px-4 py-2 bg-primary text-brand-bg rounded-xl text-xs font-black uppercase tracking-widest hover:opacity-90 transition-all active:scale-95"
+                            >
+                                {t('rules.activate')}
+                            </button>
+                            <button 
+                                onClick={() => sendAction({ type: 'rule_proposal_resolve', id: message.id, action: 'draft' })}
+                                className="px-4 py-2 bg-on-surface/5 text-on-surface rounded-xl text-xs font-black uppercase tracking-widest hover:bg-on-surface/10 transition-all border border-brand-border"
+                            >
+                                {t('messages.draft')}
+                            </button>
+                            <button 
+                                onClick={() => sendAction({ type: 'rule_proposal_resolve', id: message.id, action: 'dismiss' })}
+                                className="px-4 py-2 text-on-surface-variant/50 hover:text-on-surface rounded-xl text-xs font-black uppercase tracking-widest transition-all"
+                            >
+                                {t('messages.dismiss')}
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="mt-6 pt-6 border-t border-brand-border/30">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-primary/60">
+                                {meta.status === 'activated' ? t('messages.accepted') : t('messages.dismissed')}
+                            </span>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+  }
+
   return (
     <div 
         className={cn(

@@ -16,7 +16,7 @@ export interface Message {
 export interface Job {
   id: number;
   title: string;
-  status: 'open' | 'done' | 'archived';
+  status: 'open' | 'active' | 'done' | 'archived';
   type: string;
   channel: string;
   created_by: string;

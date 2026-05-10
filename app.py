@@ -2893,15 +2893,24 @@ async def start_session(request: Request):
         return JSONResponse({"error": "sessions not configured"}, status_code=500)
     body = await request.json()
     template_id = body.get("template_id", "")
+    manual_template = body.get("manual_template")
     draft_message_id = body.get("draft_message_id")
     channel = body.get("channel", "general")
     cast = body.get("cast", {})
     goal = body.get("goal", "")
     started_by = body.get("started_by", "user")
 
-    # If running from a draft, load the inline template from message metadata
+    # If running from a manual template design
     tmpl = None
-    if draft_message_id:
+    if manual_template:
+        tmpl = manual_template
+        template_id = tmpl.get("id", f"manual-{int(time.time())}")
+        tmpl["id"] = template_id
+        tmpl["is_custom"] = True
+        session_store._templates[template_id] = tmpl
+
+    # If running from a draft, load the inline template from message metadata
+    if not tmpl and draft_message_id:
         draft_msg = store.get_by_id(int(draft_message_id))
         if not draft_msg:
             return JSONResponse({"error": "draft message not found"}, status_code=404)

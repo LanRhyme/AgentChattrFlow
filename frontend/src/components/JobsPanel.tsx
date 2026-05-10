@@ -1,6 +1,6 @@
 import { Fragment, useState, useEffect, useRef } from 'react';
 import { Dialog, Transition, Tab } from '@headlessui/react';
-import { X, Briefcase, Plus, ChevronRight, LayoutGrid, Timer, History, Send, Zap } from 'lucide-react';
+import { X, Briefcase, Plus, ChevronRight, LayoutGrid, Timer, History, Send, Zap, Trash2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import type { Job } from '../store/useStore';
 import { Markdown } from './Markdown';
@@ -16,22 +16,21 @@ export const JobsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   const { jobs, currentChannel, settings } = useStore();
   const { t } = useTranslation();
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [, setIsCreating] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [newJobTitle, setNewJobTitle] = useState('');
-  
   const [jobMessages, setJobMessages] = useState<any[]>([]);
   const [newJobMessage, setNewJobMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const filteredJobs = jobs.filter(j => j.channel === currentChannel);
   const openJobs = filteredJobs.filter(j => j.status === 'open');
-  const activeJobs = filteredJobs.filter(j => j.status === 'done'); 
-  const archivedJobs = filteredJobs.filter(j => j.status === 'archived');
+  const activeJobs = filteredJobs.filter(j => j.status === 'active'); 
+  const archivedJobs = filteredJobs.filter(j => j.status === 'done' || j.status === 'archived');
 
   const categories = [
-    { name: t('jobs.backlog'), count: openJobs.length, items: openJobs, icon: LayoutGrid },
-    { name: t('jobs.active'), count: activeJobs.length, items: activeJobs, icon: Timer },
-    { name: t('jobs.resolved'), count: archivedJobs.length, items: archivedJobs, icon: History },
+    { id: 'open', name: t('jobs.backlog'), count: openJobs.length, items: openJobs, icon: LayoutGrid },
+    { id: 'active', name: t('jobs.active'), count: activeJobs.length, items: activeJobs, icon: Timer },
+    { id: 'resolved', name: t('jobs.resolved'), count: archivedJobs.length, items: archivedJobs, icon: History },
   ];
 
   const fetchJobMessages = async (jobId: number) => {
@@ -49,6 +48,14 @@ export const JobsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   };
 
   useEffect(() => {
+      // Refresh current selected job if it exists in the main store
+      if (selectedJob) {
+          const updated = jobs.find(j => j.id === selectedJob.id);
+          if (updated) setSelectedJob(updated);
+      }
+  }, [jobs]);
+
+  useEffect(() => {
       if (selectedJob) {
           fetchJobMessages(selectedJob.id);
           // Simple poll for job messages while panel is open
@@ -57,7 +64,7 @@ export const JobsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
       } else {
           setJobMessages([]);
       }
-  }, [selectedJob]);
+  }, [selectedJob?.id]);
 
   useEffect(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -66,7 +73,7 @@ export const JobsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   const handleCreateJob = async () => {
       if (!newJobTitle.trim()) return;
       try {
-          await fetch('/api/jobs', {
+          const res = await fetch('/api/jobs', {
               method: 'POST',
               headers: {
                   'Content-Type': 'application/json',
@@ -78,8 +85,10 @@ export const JobsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                   type: 'job'
               })
           });
-          setNewJobTitle('');
-          setIsCreating(false);
+          if (res.ok) {
+              setNewJobTitle('');
+              setIsCreating(false);
+          }
       } catch (err) {
           console.error(err);
       }
@@ -95,6 +104,19 @@ export const JobsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
               },
               body: JSON.stringify({ status })
           });
+      } catch (err) {
+          console.error(err);
+      }
+  };
+
+  const handleDeleteJob = async (id: number) => {
+      if (!window.confirm(t('common.delete_confirm'))) return;
+      try {
+          await fetch(`/api/jobs/${id}?permanent=true`, {
+              method: 'DELETE',
+              headers: { 'X-Session-Token': (window as any).__SESSION_TOKEN__ || '' }
+          });
+          if (selectedJob?.id === id) setSelectedJob(null);
       } catch (err) {
           console.error(err);
       }
@@ -162,30 +184,55 @@ export const JobsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                                 </div>
                                 <h2 className="text-xl sm:text-2xl font-bold text-on-surface tracking-tight">{t('common.jobs_board')}</h2>
                             </div>
-                            <button
-                                onClick={onClose}
-                                className="lg:hidden p-2 text-on-surface-variant hover:text-on-surface rounded-full bg-on-surface/5"
-                            >
-                                <X size={20} />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={() => setIsCreating(!isCreating)}
+                                    className={cn(
+                                        "p-2 rounded-xl transition-all border",
+                                        isCreating 
+                                            ? "bg-primary text-brand-bg border-primary rotate-45" 
+                                            : "bg-on-surface/5 text-on-surface-variant hover:text-primary hover:bg-primary/10 border-brand-border/50"
+                                    )}
+                                    title={t('jobs.create_new')}
+                                >
+                                    <Plus size={20} strokeWidth={2.5} />
+                                </button>
+                                <button
+                                    onClick={onClose}
+                                    className="lg:hidden p-2 text-on-surface-variant hover:text-on-surface rounded-xl bg-on-surface/5 border border-brand-border/50"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
                         </div>
                         
-                        <div className="relative group">
-                            <input 
-                                type="text"
-                                value={newJobTitle}
-                                onChange={(e) => setNewJobTitle(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleCreateJob()}
-                                placeholder={t('jobs.create_new_placeholder')}
-                                className="w-full bg-on-surface/5 border border-brand-border rounded-[20px] px-5 py-3.5 text-sm text-on-surface placeholder-on-surface-variant/40 focus:border-primary/50 focus:bg-on-surface/[0.08] outline-none transition-all pr-12 shadow-inner"
-                            />
-                            <button 
-                                onClick={handleCreateJob}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary text-brand-bg rounded-xl hover:opacity-90 transition-all shadow-lg active:scale-95"
-                            >
-                                <Plus size={16} strokeWidth={3} />
-                            </button>
-                        </div>
+                        <Transition
+                            show={isCreating}
+                            enter="transition-all duration-300 ease-out"
+                            enterFrom="opacity-0 -translate-y-4 scale-95"
+                            enterTo="opacity-100 translate-y-0 scale-100"
+                            leave="transition-all duration-200 ease-in"
+                            leaveFrom="opacity-100 translate-y-0 scale-100"
+                            leaveTo="opacity-0 -translate-y-4 scale-95"
+                        >
+                            <div className="relative group mb-6">
+                                <input 
+                                    type="text"
+                                    value={newJobTitle}
+                                    onChange={(e) => setNewJobTitle(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleCreateJob()}
+                                    placeholder={t('jobs.job_title_placeholder')}
+                                    className="w-full bg-on-surface/5 border border-brand-border rounded-[20px] px-5 py-3.5 text-sm text-on-surface placeholder-on-surface-variant/40 focus:border-primary/50 focus:bg-on-surface/[0.08] outline-none transition-all pr-12 shadow-inner"
+                                    autoFocus
+                                />
+                                <button 
+                                    onClick={handleCreateJob}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary text-brand-bg rounded-xl hover:opacity-90 transition-all shadow-lg active:scale-95"
+                                >
+                                    <Send size={16} strokeWidth={3} />
+                                </button>
+                            </div>
+                        </Transition>
                     </div>
 
                     <Tab.Group className="flex-1 flex flex-col min-h-0">
@@ -286,11 +333,11 @@ export const JobsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                                     </div>
                                     <h4 className="text-xl sm:text-2xl font-black text-on-surface tracking-tight mb-6 leading-tight">{selectedJob.title}</h4>
                                     
-                                    <div className="flex flex-wrap items-center gap-6">
+                                    <div className="flex flex-wrap items-center justify-between gap-6">
                                         <div className="space-y-1">
                                             <p className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/50">{t('jobs.status')}</p>
                                             <div className="flex gap-2">
-                                                {['open', 'done', 'archived'].map(s => (
+                                                {['open', 'active', 'done', 'archived'].map(s => (
                                                     <button
                                                         key={s}
                                                         onClick={() => handleUpdateStatus(selectedJob.id, s)}
@@ -301,11 +348,18 @@ export const JobsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                                                                 : "bg-on-surface/5 text-on-surface-variant/50 border-brand-border hover:text-on-surface"
                                                         )}
                                                     >
-                                                        {s}
+                                                        {t(`jobs.${s}`) || s}
                                                     </button>
                                                 ))}
                                             </div>
                                         </div>
+                                        <button 
+                                            onClick={() => handleDeleteJob(selectedJob.id)}
+                                            className="p-2.5 text-on-surface-variant/30 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all border border-transparent hover:border-red-500/20"
+                                            title={t('common.delete')}
+                                        >
+                                            <Trash2 size={20} />
+                                        </button>
                                     </div>
                                 </div>
 

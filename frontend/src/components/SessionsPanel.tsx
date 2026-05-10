@@ -5,6 +5,7 @@ import { useStore } from '../store/useStore';
 import type { SessionTemplate } from '../store/useStore';
 import { useTranslation } from 'react-i18next';
 import { Dropdown } from './Dropdown';
+import { cn } from '../utils/theme';
 
 export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const { templates, setTemplates, currentChannel, settings, agents } = useStore();
@@ -15,6 +16,13 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
   const [isDesigning, setIsDesigning] = useState(false);
   const [designDesc, setDesignDesc] = useState('');
   const [designAgent, setDesignDesignAgent] = useState('');
+
+  const [isManual, setIsManual] = useState(false);
+  const [manualRoles, setManualRoles] = useState<string[]>(['role1', 'role2']);
+  const [manualPhases, setManualPhases] = useState<any[]>([
+      { name: 'Phase 1', prompt: '', participants: ['role1'] }
+  ]);
+  const [manualName, setManualName] = useState('Custom Session');
 
   const fetchTemplates = async () => {
     try {
@@ -94,6 +102,44 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
         }),
       });
       if (res.ok) onClose();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleLaunchManual = async () => {
+    try {
+      // Auto-assign any roles not manually cast
+      const finalCast = { ...cast };
+      const pool = [...availableAgents];
+      manualRoles.forEach(role => {
+          if (!finalCast[role]) {
+              if (pool.length > 0) finalCast[role] = pool.shift()!;
+              else finalCast[role] = availableAgents[0] || settings.username || 'user';
+          }
+      });
+
+      // Create a temporary template and start it
+      const res = await fetch('/api/sessions/start', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'X-Session-Token': (window as any).__SESSION_TOKEN__ || '' 
+        },
+        body: JSON.stringify({
+          manual_template: {
+              name: manualName,
+              roles: manualRoles,
+              phases: manualPhases
+          },
+          channel: currentChannel,
+          cast: finalCast,
+          goal: goal,
+          started_by: settings.username || 'user',
+        }),
+      });
+      if (res.ok) onClose();
+      else alert('Failed to start session');
     } catch (e) {
       console.error(e);
     }
@@ -190,6 +236,140 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
                                 {t('sessions.launch_sequence')}
                             </button>
                         </div>
+                      ) : isManual ? (
+                        <div className="animate-in slide-in-from-right-4 duration-300 space-y-8">
+                            <button 
+                                onClick={() => setIsManual(false)}
+                                className="inline-flex items-center gap-2 text-xs font-bold text-primary hover:text-primary/80 mb-2 bg-primary/5 px-3 py-1.5 rounded-full border border-primary/20 transition-all"
+                            >
+                                <ChevronRight size={14} className="rotate-180" /> {t('sessions.back_to_templates')}
+                            </button>
+
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 px-1">{t('sessions.phase_name')}</label>
+                                    <input
+                                        type="text"
+                                        value={manualName}
+                                        onChange={e => setManualName(e.target.value)}
+                                        placeholder="Session Name"
+                                        className="w-full bg-on-surface/[0.03] border border-brand-border rounded-[20px] px-5 py-4 text-sm text-on-surface focus:border-primary/50 outline-none transition-all shadow-inner"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 px-1">{t('sessions.session_goal')}</label>
+                                    <input
+                                        type="text"
+                                        value={goal}
+                                        onChange={e => setGoal(e.target.value)}
+                                        placeholder={t('sessions.goal_placeholder')}
+                                        className="w-full bg-on-surface/[0.03] border border-brand-border rounded-[20px] px-5 py-4 text-sm text-on-surface focus:border-primary/50 outline-none transition-all shadow-inner"
+                                    />
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between px-1">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50">{t('sessions.cast_config')}</label>
+                                        <button onClick={() => setManualRoles([...manualRoles, `role${manualRoles.length + 1}`])} className="text-primary hover:text-primary/80 transition-colors">
+                                            <Plus size={16} strokeWidth={3} />
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-3">
+                                        {manualRoles.map((role, idx) => (
+                                            <div key={idx} className="flex gap-2">
+                                                <input 
+                                                    value={role}
+                                                    onChange={e => {
+                                                        const newRoles = [...manualRoles];
+                                                        newRoles[idx] = e.target.value;
+                                                        setManualRoles(newRoles);
+                                                    }}
+                                                    className="flex-1 bg-on-surface/[0.03] border border-brand-border rounded-xl px-4 py-2 text-xs text-on-surface focus:border-primary/30 outline-none transition-all"
+                                                />
+                                                <Dropdown 
+                                                    value={cast[role] || ''}
+                                                    onChange={(val) => setCast({ ...cast, [role]: val })}
+                                                    options={[...availableAgents, settings.username].filter((a): a is string => !!a).map(a => ({ id: a, name: a }))}
+                                                />
+                                                <button onClick={() => setManualRoles(manualRoles.filter((_, i) => i !== idx))} className="p-2 text-on-surface-variant/30 hover:text-red-500 transition-colors">
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between px-1">
+                                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50">{t('sessions.add_phase')}</label>
+                                        <button onClick={() => setManualPhases([...manualPhases, { name: `Phase ${manualPhases.length + 1}`, prompt: '', participants: [manualRoles[0] || ''] }])} className="text-primary hover:text-primary/80 transition-colors">
+                                            <Plus size={16} strokeWidth={3} />
+                                        </button>
+                                    </div>
+                                    <div className="space-y-4">
+                                        {manualPhases.map((phase, idx) => (
+                                            <div key={idx} className="p-4 rounded-2xl bg-on-surface/[0.03] border border-brand-border space-y-3 relative group">
+                                                <button onClick={() => setManualPhases(manualPhases.filter((_, i) => i !== idx))} className="absolute top-2 right-2 p-1.5 text-on-surface-variant/20 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+                                                    <X size={14} />
+                                                </button>
+                                                <input 
+                                                    value={phase.name}
+                                                    onChange={e => {
+                                                        const newPhases = [...manualPhases];
+                                                        newPhases[idx].name = e.target.value;
+                                                        setManualPhases(newPhases);
+                                                    }}
+                                                    placeholder={t('sessions.phase_name')}
+                                                    className="w-full bg-transparent border-none p-0 text-sm font-bold text-on-surface focus:ring-0 placeholder-on-surface-variant/20"
+                                                />
+                                                <textarea 
+                                                    value={phase.prompt}
+                                                    onChange={e => {
+                                                        const newPhases = [...manualPhases];
+                                                        newPhases[idx].prompt = e.target.value;
+                                                        setManualPhases(newPhases);
+                                                    }}
+                                                    placeholder={t('sessions.phase_prompt')}
+                                                    className="w-full bg-transparent border-none p-0 text-xs text-on-surface-variant focus:ring-0 resize-none h-12 placeholder-on-surface-variant/20"
+                                                />
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {manualRoles.map(role => (
+                                                        <button 
+                                                            key={role}
+                                                            onClick={() => {
+                                                                const newPhases = [...manualPhases];
+                                                                const ps = new Set(newPhases[idx].participants || []);
+                                                                if (ps.has(role)) ps.delete(role);
+                                                                else ps.add(role);
+                                                                newPhases[idx].participants = Array.from(ps);
+                                                                setManualPhases(newPhases);
+                                                            }}
+                                                            className={cn(
+                                                                "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest transition-all border",
+                                                                phase.participants?.includes(role) 
+                                                                    ? "bg-primary text-brand-bg border-primary" 
+                                                                    : "bg-on-surface/5 text-on-surface-variant/30 border-brand-border"
+                                                            )}
+                                                        >
+                                                            {role}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleLaunchManual}
+                                className="w-full flex items-center justify-center gap-3 py-5 bg-primary text-brand-bg hover:opacity-90 rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl active:scale-[0.98]"
+                            >
+                                <Play size={18} fill="currentColor" />
+                                {t('sessions.launch_sequence')}
+                            </button>
+                        </div>
                       ) : isDesigning ? (
                         <div className="animate-in slide-in-from-bottom-4 duration-300 space-y-8">
                              <button 
@@ -250,16 +430,28 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
                                     </button>
                                 ))}
 
-                                <button
-                                    onClick={() => setIsDesigning(true)}
-                                    className="p-6 rounded-3xl border-2 border-dashed border-brand-border/30 hover:border-primary/30 bg-on-surface/[0.01] hover:bg-on-surface/[0.02] transition-all text-center group"
-                                >
-                                    <div className="w-12 h-12 rounded-2xl bg-on-surface/5 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                                        <Plus size={24} className="text-on-surface-variant/50 group-hover:text-primary" />
-                                    </div>
-                                    <h4 className="text-sm font-black uppercase tracking-widest text-on-surface-variant/50 group-hover:text-on-surface">{t('sessions.design_custom')}</h4>
-                                    <p className="text-[10px] text-on-surface-variant/30 mt-1 uppercase tracking-tighter">{t('sessions.design_desc')}</p>
-                                </button>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button
+                                        onClick={() => setIsDesigning(true)}
+                                        className="p-6 rounded-3xl border-2 border-dashed border-brand-border/30 hover:border-primary/30 bg-on-surface/[0.01] hover:bg-on-surface/[0.02] transition-all text-center group"
+                                    >
+                                        <div className="w-12 h-12 rounded-2xl bg-on-surface/5 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                            <Plus size={24} className="text-on-surface-variant/50 group-hover:text-primary" />
+                                        </div>
+                                        <h4 className="text-[11px] font-black uppercase tracking-widest text-on-surface-variant/50 group-hover:text-on-surface">{t('sessions.design_custom')}</h4>
+                                        <p className="text-[8px] text-on-surface-variant/30 mt-1 uppercase tracking-tighter">{t('sessions.design_desc')}</p>
+                                    </button>
+                                    <button
+                                        onClick={() => { setIsManual(true); setCast({}); }}
+                                        className="p-6 rounded-3xl border-2 border-dashed border-brand-border/30 hover:border-primary/30 bg-on-surface/[0.01] hover:bg-on-surface/[0.02] transition-all text-center group"
+                                    >
+                                        <div className="w-12 h-12 rounded-2xl bg-on-surface/5 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                            <Zap size={24} className="text-on-surface-variant/50 group-hover:text-primary" />
+                                        </div>
+                                        <h4 className="text-[11px] font-black uppercase tracking-widest text-on-surface-variant/50 group-hover:text-on-surface">{t('sessions.manual_design')}</h4>
+                                        <p className="text-[8px] text-on-surface-variant/30 mt-1 uppercase tracking-tighter">{t('sessions.manual_design_desc')}</p>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                       )}

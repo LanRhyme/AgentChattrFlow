@@ -26,6 +26,7 @@
     "archive": "归档",
     "create": "新建",
     "delete": "删除",
+    "delete_confirm": "确定要删除吗？此操作不可撤销。",
     "pin": "置顶",
     "unpin": "取消置顶",
     "details": "详细信息",
@@ -93,20 +94,30 @@
     "status": "状态",
     "messages": "情报流",
     "type_message": "追加进展...",
-    "no_jobs": "当前频道暂无任务"
+    "no_jobs": "当前频道暂无任务",
+    "create_job": "创建新任务",
+    "job_title": "任务标题",
+    "job_title_placeholder": "输入任务标题...",
+    "open": "待处理",
+    "active": "进行中",
+    "done": "已完成",
+    "archived": "已归档",
+    "no_comms": "暂无情报交流"
   },
   "rules": {
     "title": "规则列表",
     "protocol_control": "规约控制",
     "active_protocols": "生效中的规约",
-    "neural_drafts": "草案列表",
+    "proposed_drafts": "提案草案",
     "no_active": "暂无生效中的指令。",
     "no_drafts": "草案列表为空。",
     "demote_to_draft": "降级为草案",
     "activate": "激活指令",
+    "activate_now": "立即激活",
     "save_directive": "保存指令",
-    "new_directive_placeholder": "定义新的指令...",
-    "inject_new": "注入新指令"
+    "new_protocol": "新规约提案",
+    "propose_placeholder": "定义新的指令...",
+    "transmit_proposal": "提交提案"
   },
   "sessions": {
     "title": "编排中心",
@@ -122,7 +133,15 @@
     "requirement_placeholder": "描述你想要创建的特定会话...",
     "propose_custom": "提交自定义草案",
     "design_custom": "设计自定义会话",
-    "design_desc": "与智能体协作，起草一套全新的任务流序列"
+    "design_desc": "与智能体协作，起草一套全新的任务流序列",
+    "manual_design": "手动设计",
+    "manual_design_desc": "完全手动配置角色与阶段序列",
+    "add_role": "添加角色",
+    "add_phase": "添加阶段",
+    "phase_name": "阶段名称",
+    "phase_prompt": "阶段指令",
+    "participants": "参与角色",
+    "is_output": "设为最终产出"
   },
   "sidebar": {
     "rename_agent": "重命名智能体 {{id}}:",
