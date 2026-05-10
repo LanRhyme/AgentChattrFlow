@@ -94,6 +94,7 @@ export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
       { id: 'blue', label: 'Blue', color: '#2196f3' },
       { id: 'purple', label: 'Purple', color: '#9c27b0' },
       { id: 'rose', label: 'Rose', color: '#f43f5e' },
+      { id: 'blackwhite', label: 'B&W', color: '#ffffff' },
   ];
 
   const PALETTE_STYLES = [
@@ -150,22 +151,22 @@ export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
 
             <div className="space-y-3">
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant px-1">{t('settings.primary_color')}</label>
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-5 gap-3">
                     {THEME_COLORS.map((color) => {
                         const isSelected = localColor === color.id;
                         return (
                             <button
                                 key={color.id}
                                 onClick={() => applyColor(color.id)}
-                                className={`flex items-center gap-3 p-3 rounded-2xl border transition-all relative ${
-                                    isSelected 
-                                    ? 'bg-primary/10 border-primary ring-1 ring-primary shadow-lg shadow-primary/10' 
+                                className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all relative ${
+                                    isSelected
+                                    ? 'bg-primary/10 border-primary ring-1 ring-primary shadow-lg shadow-primary/10'
                                     : 'bg-on-surface/[0.03] border-brand-border text-on-surface-variant hover:bg-on-surface/[0.05]'
                                 }`}
                             >
                                 {isSelected && <div className="absolute top-1 right-1 animate-in zoom-in-50 duration-300"><Check size={10} className="text-primary" /></div>}
-                                <div className="w-5 h-5 rounded-full shadow-lg shrink-0" style={{ backgroundColor: color.color }} />
-                                <span className={`text-[11px] font-bold ${isSelected ? 'text-primary' : ''}`}>{color.label}</span>
+                                <div className="w-5 h-5 rounded-full shadow-lg shrink-0" style={{ backgroundColor: color.color, border: color.id === 'blackwhite' ? '1px solid #666' : 'none' }} />
+                                <span className={`text-[10px] font-bold ${isSelected ? 'text-primary' : ''}`}>{color.label}</span>
                             </button>
                         );
                     })}

@@ -1348,7 +1348,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     room_settings["contrast"] = new["contrast"]
                 if "theme" in new and new["theme"] in ("light", "dark", "system"):
                     room_settings["theme"] = new["theme"]
-                if "theme_color" in new and new["theme_color"] in ("green", "blue", "purple", "rose"):
+                if "theme_color" in new and new["theme_color"] in ("green", "blue", "purple", "rose", "blackwhite"):
                     room_settings["theme_color"] = new["theme_color"]
                 if "palette_style" in new and new["palette_style"] in ("tonal_spot", "vibrant", "expressive", "neutral"):
                     room_settings["palette_style"] = new["palette_style"]

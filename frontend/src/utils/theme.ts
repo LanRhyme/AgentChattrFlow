@@ -6,10 +6,10 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system';
-export type ThemeColor = 'green' | 'blue' | 'purple' | 'rose';
+export type ThemeColor = 'green' | 'blue' | 'purple' | 'rose' | 'blackwhite';
 export type PaletteStyle = 'tonal_spot' | 'vibrant' | 'expressive' | 'neutral';
 
-export const VALID_THEME_COLORS: ThemeColor[] = ['green', 'blue', 'purple', 'rose'];
+export const VALID_THEME_COLORS: ThemeColor[] = ['green', 'blue', 'purple', 'rose', 'blackwhite'];
 export const VALID_PALETTE_STYLES: PaletteStyle[] = ['tonal_spot', 'vibrant', 'expressive', 'neutral'];
 export const VALID_THEMES: ThemeMode[] = ['light', 'dark', 'system'];
 

@@ -67,6 +67,21 @@
   --brand-border: rgba(255, 178, 190, 0.15);
 }
 
+/* Black & White */
+:root[data-theme-color="blackwhite"] {
+  --seed-primary: #ffffff;
+  --seed-on-primary: #000000;
+  --seed-primary-container: #1a1a1a;
+  --seed-on-primary-container: #f5f5f5;
+  --seed-surface: #0a0a0a;
+  --seed-on-surface: #f0f0f0;
+  --seed-surface-variant: #2a2a2a;
+  --seed-on-surface-variant: #b0b0b0;
+  --seed-outline: #606060;
+  --seed-surface-container: #151515;
+  --brand-border: rgba(255, 255, 255, 0.12);
+}
+
 /* --- M3 SEMANTIC COLORS --- */
 /* Default (Tonal Spot) */
 :root,
@@ -111,9 +126,13 @@
   --primary: #d0c2c3; 
   --on-primary: #372e2f; 
 }
-:root[data-palette-style="neutral"][data-theme-color="green"] { 
-  --primary: #c2c9bd; 
-  --on-primary: #2d322a; 
+:root[data-palette-style="neutral"][data-theme-color="green"] {
+  --primary: #c2c9bd;
+  --on-primary: #2d322a;
+}
+:root[data-palette-style="neutral"][data-theme-color="blackwhite"] {
+  --primary: #d0d0d0;
+  --on-primary: #1a1a1a;
 }
 
 @theme inline {
