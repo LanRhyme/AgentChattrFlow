@@ -519,7 +519,7 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
             </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex gap-3 lg:gap-4 items-end p-3 lg:p-5 relative min-h-[64px]">
+        <form onSubmit={handleSubmit} className="flex gap-3 lg:gap-4 items-stretch p-3 lg:p-5 relative min-h-[64px]">
           {isDragging && (
               <div className="absolute inset-0 bg-primary/10 backdrop-blur-sm z-10 flex items-center justify-center">
                   <div className="bg-primary text-brand-bg px-6 py-2 rounded-full font-black text-xs uppercase tracking-widest shadow-xl flex items-center gap-2">
@@ -527,18 +527,18 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
                   </div>
               </div>
           )}
-          <div className="flex-1 min-w-0 relative">
-            <div 
+          <div className="flex-1 min-w-0 relative flex items-center">
+            <div
               ref={highlightRef}
-              className="absolute inset-0 pointer-events-none whitespace-pre-wrap break-words text-[16px] leading-[1.5] p-0 overflow-hidden text-on-surface font-sans"
+              className="absolute inset-0 pointer-events-none whitespace-pre-wrap break-words text-[16px] leading-[1.5] p-0 overflow-hidden text-on-surface font-sans flex items-center"
               aria-hidden="true"
-              style={{ 
-                  fontFamily: 'inherit', 
+              style={{
+                  fontFamily: 'inherit',
                   letterSpacing: 'normal',
                   wordSpacing: 'normal',
                   fontVariantLigatures: 'none',
                   textRendering: 'optimizeLegibility',
-                  padding: '0' 
+                  padding: '0'
               }}
             >
               {renderHighlightedText()}
@@ -554,9 +554,9 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
               onKeyUp={(e) => setCursorPos(e.currentTarget.selectionStart)}
               onPaste={handlePaste}
               placeholder={t('input.placeholder', { channel: currentChannel })}
-              className="w-full bg-transparent border-none focus:ring-0 focus:outline-none text-[16px] text-transparent caret-on-surface resize-none max-h-60 custom-scrollbar leading-[1.5] p-0 block relative z-10"
-              style={{ 
-                  fontFamily: 'inherit', 
+              className="w-full bg-transparent border-none focus:ring-0 focus:outline-none text-[16px] text-transparent caret-on-surface resize-none max-h-60 custom-scrollbar leading-[1.5] p-0 block relative z-10 py-1"
+              style={{
+                  fontFamily: 'inherit',
                   letterSpacing: 'normal',
                   wordSpacing: 'normal',
                   fontVariantLigatures: 'none',
@@ -568,7 +568,7 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
           <button
             type="submit"
             disabled={(!text.trim() && attachments.length === 0) || isUploading}
-            className="shrink-0 w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center bg-primary hover:opacity-90 disabled:opacity-20 disabled:grayscale disabled:hover:bg-primary text-brand-bg rounded-2xl transition-all shadow-lg shadow-primary/30 active:scale-90"
+            className="shrink-0 w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center bg-primary hover:opacity-90 disabled:opacity-20 disabled:grayscale disabled:hover:bg-primary text-brand-bg rounded-2xl transition-all shadow-lg shadow-primary/30 active:scale-90 self-center"
           >
             <Send size={18} className="lg:w-5 lg:h-5" strokeWidth={3} />
           </button>
