@@ -101,7 +101,7 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
   return (
     <Transition.Root show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-[100]" onClose={onClose}>
+      <Dialog as="div" className="relative z-[150]" onClose={onClose}>
         <Transition.Child
           as={Fragment}
           enter="ease-in-out duration-300"
@@ -116,7 +116,7 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
         <div className="fixed inset-0 overflow-hidden">
           <div className="absolute inset-0 overflow-hidden">
-            <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+            <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full">
               <Transition.Child
                 as={Fragment}
                 enter="transform transition ease-in-out duration-500"
@@ -128,25 +128,25 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
               >
                 <Dialog.Panel className="pointer-events-auto w-screen max-w-xl">
                   <div className="flex h-full flex-col bg-brand-panel shadow-2xl border-l border-brand-border ring-1 ring-white/5">
-                    <div className="flex items-center justify-between px-8 py-8 shrink-0">
+                    <div className="flex items-center justify-between px-6 sm:px-8 py-6 sm:py-8 shrink-0 border-b border-brand-border/30">
                       <div>
                           <div className="flex items-center gap-2 text-primary mb-1">
                              <Zap size={16} strokeWidth={2.5} />
-                             <span className="text-[11px] font-black uppercase tracking-[0.2em]">{t('sessions.neural_engine')}</span>
+                             <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em]">{t('sessions.neural_engine')}</span>
                           </div>
-                          <Dialog.Title className="text-2xl font-bold text-on-surface tracking-tight">
+                          <Dialog.Title className="text-xl sm:text-2xl font-bold text-on-surface tracking-tight">
                               {t('sessions.title')}
                           </Dialog.Title>
                       </div>
                       <button
                         onClick={onClose}
-                        className="p-3 text-on-surface-variant hover:text-on-surface rounded-full bg-on-surface/5 hover:bg-on-surface/10 transition-all border border-brand-border"
+                        className="p-2.5 sm:p-3 text-on-surface-variant hover:text-on-surface rounded-full bg-on-surface/5 hover:bg-on-surface/10 transition-all border border-brand-border"
                       >
                         <X size={20} />
                       </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto custom-scrollbar px-8 pb-12">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar px-6 sm:px-8 pb-12 pt-6">
                       {selectedTemplate ? (
                         <div className="animate-in slide-in-from-right-4 duration-300 space-y-8">
                             <button 
@@ -233,7 +233,7 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
                                     <button
                                         key={tmpl.id}
                                         onClick={() => startCast(tmpl)}
-                                        className="text-left p-6 rounded-3xl bg-on-surface/[0.03] border border-brand-border hover:bg-on-surface/[0.06] hover:border-primary/30 transition-all group"
+                                        className="text-left p-5 sm:p-6 rounded-3xl bg-on-surface/[0.03] border border-brand-border hover:bg-on-surface/[0.06] hover:border-primary/30 transition-all group"
                                     >
                                         <div className="flex justify-between items-start mb-3">
                                             <h4 className="text-lg font-bold text-on-surface group-hover:text-primary transition-colors">{tmpl.name}</h4>

@@ -6,6 +6,7 @@ import { useWebSocket } from '../hooks/useWebSocket';
 import { useTranslation } from 'react-i18next';
 import { ApiAgentManager } from './ApiAgentManager';
 import { Dropdown } from './Dropdown';
+import { cn } from '../utils/theme';
 
 export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const { settings, soundPrefs, setSoundPrefs, agents, updateSettings } = useStore();
@@ -419,7 +420,7 @@ export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
           <div className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity" />
         </Transition.Child>
 
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center sm:p-4">
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-500"
@@ -429,32 +430,45 @@ export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
             leaveFrom="opacity-100 scale-100 translate-y-0"
             leaveTo="opacity-0 scale-95 translate-y-4"
           >
-            <Dialog.Panel className="w-full max-w-4xl h-[600px] flex transform overflow-hidden rounded-[32px] bg-brand-panel text-left align-middle shadow-2xl transition-all border border-brand-border ring-1 ring-white/5">
-              {/* Sidebar */}
-              <div className="w-64 border-r border-brand-border bg-brand-bg/50 flex flex-col shrink-0">
-                <div className="p-8 pb-4">
-                    <h3 className="text-xl font-black text-on-surface tracking-tight leading-none flex items-center gap-2">
+            <Dialog.Panel className="w-full h-full sm:h-[650px] sm:max-w-5xl flex flex-col sm:flex-row transform overflow-hidden sm:rounded-[32px] bg-brand-panel text-left align-middle shadow-2xl transition-all border border-brand-border ring-1 ring-white/5">
+              
+              {/* Mobile Close Button (floating) */}
+              <button
+                onClick={onClose}
+                className="sm:hidden absolute top-4 right-4 z-[160] p-2 bg-black/20 backdrop-blur-md rounded-full text-on-surface-variant hover:text-on-surface"
+              >
+                <X size={24} />
+              </button>
+
+              {/* Sidebar (Desktop) / Header Tabs (Mobile) */}
+              <div className="w-full sm:w-64 border-b sm:border-b-0 sm:border-r border-brand-border bg-brand-bg/50 flex flex-col shrink-0">
+                <div className="p-6 sm:p-8 pb-4">
+                    <h3 className="text-lg sm:text-xl font-black text-on-surface tracking-tight leading-none flex items-center gap-2">
                       <Smartphone size={20} className="text-primary" />
                       {t('common.system_preferences')}
                     </h3>
                 </div>
-                <nav className="flex-1 px-4 space-y-1 mt-4">
+                
+                {/* Horizontal scroll on mobile, vertical list on desktop */}
+                <nav className="flex-1 flex sm:flex-col overflow-x-auto sm:overflow-x-hidden no-scrollbar px-4 pb-2 sm:pb-0 sm:space-y-1 mt-2 sm:mt-4">
                     {sections.map((section, idx) => (
                         <button
                             key={section.id}
                             onClick={() => setActiveSection(idx)}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all group ${
+                            className={cn(
+                                "flex items-center gap-2 sm:gap-3 px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl transition-all group whitespace-nowrap",
                                 activeSection === idx 
-                                ? 'bg-primary/10 text-primary' 
+                                ? 'bg-primary/10 text-primary shadow-sm' 
                                 : 'text-on-surface-variant hover:bg-on-surface/5 hover:text-on-surface'
-                            }`}
+                            )}
                         >
-                            <section.icon size={18} className={activeSection === idx ? 'text-primary' : 'text-on-surface-variant group-hover:text-on-surface'} />
-                            <span className="text-[13px] font-bold">{section.title}</span>
+                            <section.icon size={16} className={activeSection === idx ? 'text-primary' : 'text-on-surface-variant group-hover:text-on-surface'} />
+                            <span className="text-[12px] sm:text-[13px] font-bold">{section.title}</span>
                         </button>
                     ))}
                 </nav>
-                <div className="p-6">
+
+                <div className="hidden sm:block p-6">
                     <button
                       onClick={onClose}
                       className="w-full flex items-center justify-center gap-2 py-3 bg-on-surface/[0.03] hover:bg-on-surface/[0.08] text-on-surface-variant hover:text-on-surface border border-brand-border rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all"
@@ -464,25 +478,25 @@ export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
                 </div>
               </div>
 
-              {/* Content */}
-              <div className="flex-1 flex flex-col min-w-0 bg-brand-panel">
-                <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
+              {/* Content Area */}
+              <div className="flex-1 flex flex-col min-w-0 bg-brand-panel overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-6 sm:p-10 custom-scrollbar">
                     <div className="max-w-xl mx-auto animate-in fade-in slide-in-from-right-4 duration-500" key={activeSection}>
-                         <div className="flex items-center gap-3 mb-8">
-                            <h4 className="text-sm font-black uppercase tracking-[0.3em] text-on-surface-variant">{sections[activeSection].title}</h4>
+                         <div className="flex items-center gap-3 mb-6 sm:mb-8">
+                            <h4 className="text-[10px] sm:text-sm font-black uppercase tracking-[0.3em] text-on-surface-variant">{sections[activeSection].title}</h4>
                             <div className="flex-1 h-px bg-brand-border" />
                          </div>
                          {sections[activeSection].fields}
                     </div>
                 </div>
 
-                <div className="p-8 border-t border-brand-border flex gap-4 bg-brand-bg/20">
+                <div className="p-6 sm:p-8 border-t border-brand-border flex flex-col sm:flex-row gap-3 sm:gap-4 bg-brand-bg/20">
                     <button className="px-6 py-3 bg-on-surface/[0.03] hover:bg-on-surface/[0.08] text-on-surface-variant border border-brand-border rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">
                         {t('settings.data_archive')}
                     </button>
                     <button
                       type="button"
-                      className="flex-1 inline-flex justify-center rounded-2xl border border-transparent bg-primary px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-brand-bg hover:opacity-90 transition-all shadow-lg"
+                      className="inline-flex justify-center rounded-2xl border border-transparent bg-primary px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-brand-bg hover:opacity-90 transition-all shadow-lg"
                       onClick={onClose}
                     >
                       {t('settings.confirm_sequence')}

@@ -32,6 +32,33 @@ def _parse_args():
     return parser.parse_args()
 
 
+def _get_local_ip():
+    import socket
+    try:
+        # Get all interfaces
+        hostname = socket.gethostname()
+        all_ips = socket.gethostbyname_ex(hostname)[2]
+        
+        # Priority 1: Real LAN IPs
+        lan_prefixes = ("192.168.", "10.", "172.16.", "172.17.", "172.18.", "172.19.", "172.20.", "172.21.", "172.22.", "172.23.", "172.24.", "172.25.", "172.26.", "172.27.", "172.28.", "172.29.", "172.30.", "172.31.")
+        for ip in all_ips:
+            if ip.startswith(lan_prefixes) and not ip.startswith("198.18."):
+                return ip
+
+        # Priority 2: Standard socket method
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0)
+        s.connect(('8.8.8.8', 1))
+        ip = s.getsockname()[0]
+        s.close()
+        if not ip.startswith("127."):
+            return ip
+            
+        return all_ips[0] if all_ips else "127.0.0.1"
+    except Exception:
+        return "127.0.0.1"
+
+
 def main():
     logging.basicConfig(
         level=logging.INFO,
@@ -42,7 +69,7 @@ def main():
     # Parse flags for --help support; the actual env propagation happens via
     # the shared config_loader.apply_cli_overrides helper so run.py and the
     # wrappers use identical extraction logic.
-    _parse_args()
+    args = _parse_args()
 
     from config_loader import apply_cli_overrides, load_config
     apply_cli_overrides()
@@ -53,6 +80,14 @@ def main():
         sys.exit(1)
 
     config = load_config(ROOT)
+
+    # Determine host/port before configuring the app so middleware knows the intent
+    host = config.get("server", {}).get("host", "127.0.0.1")
+    port = config.get("server", {}).get("port", 8300)
+
+    if args.allow_network and host in ("127.0.0.1", "localhost"):
+        host = "0.0.0.0"
+        config.setdefault("server", {})["host"] = "0.0.0.0"
 
     # --- Security: generate a random session token (in-memory only) ---
     session_token = secrets.token_hex(32)
@@ -123,11 +158,10 @@ def main():
 
     # Run web server
     import uvicorn
-    host = config.get("server", {}).get("host", "127.0.0.1")
-    port = config.get("server", {}).get("port", 8300)
 
     # --- Security: warn if binding to a non-localhost address ---
     if host not in ("127.0.0.1", "localhost", "::1"):
+        local_ip = _get_local_ip()
         print(f"\n  !! SECURITY WARNING — binding to {host} !!")
         print("  This exposes agentchattr to your local network.")
         print()
@@ -138,13 +172,13 @@ def main():
         print("  - If agents run with auto-approve, this means remote code execution")
         print()
         print("  Only use this on a trusted home network. Never on public/shared WiFi.")
-        if "--allow-network" not in sys.argv:
+        if not args.allow_network:
             print("  Pass --allow-network to start anyway, or set host to 127.0.0.1.\n")
             sys.exit(1)
         else:
             print()
             try:
-                confirm = input("  Type YES to accept these risks and start: ").strip()
+                confirm = input(f"  Type YES to allow network access (Local IP: {local_ip}): ").strip()
             except (EOFError, KeyboardInterrupt):
                 confirm = ""
             if confirm != "YES":
@@ -152,10 +186,16 @@ def main():
                 sys.exit(1)
 
     print(f"\n  agentchattr")
-    print(f"  Web UI:  http://{host}:{port}")
-    print(f"  MCP HTTP: http://{host}:{http_port}/mcp  (Claude, Codex)")
-    print(f"  MCP SSE:  http://{host}:{sse_port}/sse   (Gemini)")
-    print(f"  Data:    {data_dir}")
+    print(f"  Local Web UI:   http://localhost:{port}")
+    if host in ("0.0.0.0", ""):
+        local_ip = _get_local_ip()
+        print(f"  Network Web UI: http://{local_ip}:{port}")
+    else:
+        print(f"  Web UI:         http://{host}:{port}")
+    
+    print(f"  MCP HTTP:       http://{host if host not in ('0.0.0.0', '') else 'localhost'}:{http_port}/mcp")
+    print(f"  MCP SSE:        http://{host if host not in ('0.0.0.0', '') else 'localhost'}:{sse_port}/sse")
+    print(f"  Data:           {data_dir}")
     print(f"  Agents auto-trigger on @mention")
     print(f"\n  Session token: {session_token}\n")
 

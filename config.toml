@@ -47,6 +47,17 @@ cwd = ".."
 color = "#f7f677"
 label = "Kilo"
 
+[agents.opencode]
+command = "opencode"
+cwd = ".."
+color = "#38bdf8"
+label = "OpenCode"
+env = { PYTHONHTTPSVERIFY = "0" }
+mcp_inject = "settings_file"
+mcp_settings_path = ".mcp.json"
+mcp_transport = "http"
+mcp_http_key = "url"
+
 [agents.codebuddy]
 command = "codebuddy"
 cwd = ".."

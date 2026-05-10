@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { MessageList } from './components/MessageList';
 import { MessageInput } from './components/MessageInput';
 import { useWebSocket } from './hooks/useWebSocket';
 import { useStore } from './store/useStore';
-import { Hash, Zap, StopCircle, ArrowRight } from 'lucide-react';
+import { Hash, Zap, StopCircle, ArrowRight, Menu } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { applyThemeToDOM, setupSystemThemeListener, cn } from './utils/theme';
 import { AgentDetailDialog } from './components/AgentDetailDialog';
@@ -13,6 +13,7 @@ function App() {
   const { currentChannel, sessions, settings, pinnedAgents, togglePinAgent } = useStore();
   const { sendMessage } = useWebSocket();
   const { t } = useTranslation();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Apply Theme
   useEffect(() => {
@@ -82,7 +83,21 @@ function App() {
         </div>
       )}
 
-      <Sidebar />
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] lg:hidden animate-in fade-in duration-300"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar Container */}
+      <div className={cn(
+        "fixed inset-y-0 left-0 z-[101] w-[280px] lg:w-auto lg:static transform lg:translate-x-0 transition-transform duration-300 ease-out",
+        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <Sidebar onMobileClose={() => setIsSidebarOpen(false)} />
+      </div>
       
       <main 
         className={cn(
@@ -95,23 +110,29 @@ function App() {
             : 'var(--brand-bg)'
         }}
       >
-        {/* M3 Style Top Bar */}
-        <header className="h-16 border-b border-brand-border/30 flex items-center justify-between px-8 bg-brand-bg/40 backdrop-blur-2xl z-20 shrink-0">
-          <div className="flex items-center gap-4 group cursor-default">
-            <div className="w-10 h-10 rounded-2xl bg-surface-high flex items-center justify-center border border-brand-border/50 shadow-sm group-hover:border-primary/50 transition-all duration-500">
+        {/* M3 Style Top Bar - Fixed height, flex-shrink-0 */}
+        <header className="h-16 shrink-0 border-b border-brand-border/30 flex items-center justify-between px-4 lg:px-8 bg-brand-bg/60 backdrop-blur-2xl z-30">
+          <div className="flex items-center gap-3 lg:gap-4 group cursor-default min-w-0">
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-2 hover:bg-surface-high rounded-xl text-on-surface-variant transition-colors lg:hidden shrink-0"
+            >
+              <Menu size={24} />
+            </button>
+            <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-2xl bg-surface-high items-center justify-center border border-brand-border/50 shadow-sm group-hover:border-primary/50 transition-all duration-500 hidden xs:flex shrink-0">
                 <Hash size={20} className="text-primary group-hover:scale-110 transition-transform" />
             </div>
-            <div>
-                <h2 className="font-bold text-on-surface text-lg leading-none tracking-tight">{currentChannel}</h2>
-                <p className="text-[10px] text-primary font-black uppercase tracking-[0.2em] mt-1.5 opacity-80 group-hover:opacity-100 transition-opacity">{t('common.neural_node')}</p>
+            <div className="min-w-0">
+                <h2 className="font-bold text-on-surface text-base lg:text-lg leading-none tracking-tight truncate">{currentChannel}</h2>
+                <p className="text-[9px] lg:text-[10px] text-primary font-black uppercase tracking-[0.2em] mt-1 lg:mt-1.5 opacity-80 group-hover:opacity-100 transition-opacity truncate">{t('common.neural_node')}</p>
             </div>
           </div>
         </header>
 
         {/* Active Session Info Bar */}
         {activeSession && (
-            <div className="bg-primary/10 border-b border-primary/20 px-8 py-3 flex items-center justify-between animate-in slide-in-from-top-full duration-500 z-10">
-                <div className="flex items-center gap-4 min-w-0">
+            <div className="bg-primary/10 border-b border-primary/20 px-4 lg:px-8 py-3 flex items-center justify-between animate-in slide-in-from-top-full duration-500 z-10 shrink-0">
+                <div className="flex items-center gap-3 lg:gap-4 min-w-0">
                     <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary shrink-0 animate-pulse">
                         <Zap size={16} fill="currentColor" />
                     </div>
@@ -134,24 +155,24 @@ function App() {
                 </div>
                 <button 
                     onClick={handleEndSession}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-red-500/20 active:scale-95"
+                    className="flex items-center gap-2 px-3 lg:px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl text-[9px] lg:text-[10px] font-black uppercase tracking-widest transition-all border border-red-500/20 active:scale-95 shrink-0"
                 >
-                    <StopCircle size={14} /> {t('common.end_session')}
+                    <StopCircle size={14} /> <span className="hidden sm:inline">{t('common.end_session')}</span>
                 </button>
             </div>
         )}
 
-        {/* Neural Transmission Area (Messages) */}
-        <div className="flex-1 flex flex-col min-h-0 relative">
+        {/* Neural Transmission Area (Messages) - flex-1 with hidden overflow to allow inner scroll */}
+        <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden">
             <MessageList />
             
             {/* Subtle Gradient Overlays for M3 Depth */}
-            <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-brand-bg to-transparent pointer-events-none z-10 opacity-50" />
-            <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-brand-bg via-brand-bg/80 to-transparent pointer-events-none z-10" />
+            <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-brand-bg/80 to-transparent pointer-events-none z-10 opacity-30" />
+            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-brand-bg via-brand-bg/40 to-transparent pointer-events-none z-10" />
         </div>
         
         {/* Comms Interface (Input) */}
-        <div className="px-10 pb-10 pt-2 z-20">
+        <div className="px-4 lg:px-10 pb-4 lg:pb-10 pt-2 z-20 shrink-0">
             <MessageInput onSendMessage={handleSendMessage} />
         </div>
       </main>

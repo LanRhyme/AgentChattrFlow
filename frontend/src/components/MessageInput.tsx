@@ -246,7 +246,7 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
     <div className="relative group max-w-5xl mx-auto w-full">
       {/* Agent Mention Pills */}
       {Object.keys(agents).length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-3 px-1">
+          <div className="flex overflow-x-auto lg:flex-wrap gap-2 mb-3 px-1 no-scrollbar pb-1">
               {Object.entries(agents).map(([name, info]) => {
                   const isActive = activeMentions.has(name);
                   return (
@@ -255,7 +255,7 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
                           type="button"
                           onClick={() => toggleMention(name)}
                           className={cn(
-                              "px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all border flex items-center gap-1.5",
+                              "px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all border flex items-center gap-1.5 whitespace-nowrap",
                               isActive 
                                   ? "bg-primary/20 text-primary border-primary/30" 
                                   : "bg-surface-high text-on-surface-variant/50 hover:text-on-surface border-brand-border hover:bg-on-surface/5"
@@ -271,7 +271,7 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
 
       {/* Autocomplete Popover */}
       {suggestionType && currentSuggestions.length > 0 && (
-          <div className="absolute bottom-full left-0 mb-4 w-80 bg-brand-panel border border-brand-border rounded-[24px] shadow-[0_16px_40px_-12px_rgba(0,0,0,0.8)] overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 z-50 ring-1 ring-white/5">
+          <div className="absolute bottom-full left-0 mb-4 w-[calc(100vw-2rem)] lg:w-80 bg-brand-panel border border-brand-border rounded-[24px] shadow-[0_16px_40px_-12px_rgba(0,0,0,0.8)] overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 z-50 ring-1 ring-white/5">
               <div className="px-4 py-3 border-b border-brand-border/30 bg-surface-low/30">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant">
                       {suggestionType === 'agent' ? t('input.select_agent') : t('input.system_commands')}
@@ -335,7 +335,7 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
       
       <div 
         className={cn(
-            "relative flex flex-col bg-surface-high border rounded-[28px] overflow-hidden shadow-2xl transition-all",
+            "relative flex flex-col bg-surface-high border rounded-[24px] lg:rounded-[28px] overflow-hidden shadow-2xl transition-all",
             isDragging ? "border-primary bg-primary/5 ring-4 ring-primary/20" : "border-brand-border group-focus-within:border-primary/50 group-focus-within:bg-brand-panel"
         )}
         onDragEnter={handleDragEnter}
@@ -353,7 +353,7 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
         />
 
         {/* Toolbar */}
-        <div className="flex items-center gap-1 px-5 py-2 border-b border-brand-border/30 bg-surface-low/30">
+        <div className="flex items-center gap-1 px-3 lg:px-5 py-2 border-b border-brand-border/30 bg-surface-low/30">
             <button 
                 type="button" 
                 onClick={() => fileInputRef.current?.click()}
@@ -365,33 +365,33 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
             
             <div className="ml-auto flex items-center gap-3">
                 <span className="text-[9px] text-on-surface-variant/40 font-black uppercase tracking-[0.2em] flex items-center gap-1.5 opacity-60">
-                    <Command size={10} /> {t('common.newline_hint')}
+                    <Command size={10} /> <span className="hidden sm:inline">{t('common.newline_hint')}</span>
                 </span>
             </div>
         </div>
 
         {/* Attachments Preview Area */}
         {attachments.length > 0 && (
-            <div className="flex flex-wrap gap-3 p-4 pb-0 border-b border-brand-border/30">
+            <div className="flex flex-wrap gap-2 lg:gap-3 p-3 lg:p-4 pb-0 border-b border-brand-border/30">
                 {attachments.map((att, idx) => (
-                    <div key={idx} className="relative group/att bg-brand-bg rounded-xl border border-brand-border p-2 pr-10 min-w-[120px] max-w-[200px] flex items-center gap-3">
-                        <div className="w-10 h-10 shrink-0 bg-on-surface/5 rounded-lg flex items-center justify-center overflow-hidden">
+                    <div key={idx} className="relative group/att bg-brand-bg rounded-xl border border-brand-border p-2 pr-10 min-w-[100px] lg:min-w-[120px] max-w-[160px] lg:max-w-[200px] flex items-center gap-2 lg:gap-3">
+                        <div className="w-8 h-8 lg:w-10 lg:h-10 shrink-0 bg-on-surface/5 rounded-lg flex items-center justify-center overflow-hidden">
                             {att.type?.startsWith('image/') ? (
                                 <img src={att.url} alt={att.name} className="w-full h-full object-cover" />
                             ) : (
-                                <File size={18} className="text-primary" />
+                                <File size={16} className="text-primary" />
                             )}
                         </div>
                         <div className="min-w-0 flex-1">
-                            <p className="text-xs font-semibold text-on-surface truncate" title={att.name}>{att.name}</p>
-                            <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-widest truncate">{att.type?.split('/')[1] || 'FILE'}</p>
+                            <p className="text-[10px] lg:text-xs font-semibold text-on-surface truncate" title={att.name}>{att.name}</p>
+                            <p className="text-[8px] lg:text-[10px] text-on-surface-variant uppercase font-bold tracking-widest truncate">{att.type?.split('/')[1] || 'FILE'}</p>
                         </div>
                         <button 
                             type="button" 
                             onClick={() => removeAttachment(idx)}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-on-surface/10 hover:bg-red-500 text-on-surface-variant hover:text-white rounded-full opacity-0 group-hover/att:opacity-100 transition-all"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-on-surface/10 hover:bg-red-500 text-on-surface-variant hover:text-white rounded-full lg:opacity-0 lg:group-hover/att:opacity-100 transition-all"
                         >
-                            <X size={12} />
+                            <X size={10} />
                         </button>
                     </div>
                 ))}
@@ -399,7 +399,7 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
         )}
 
         {/* Input Row */}
-        <form onSubmit={handleSubmit} className="flex gap-4 items-end p-5 relative">
+        <form onSubmit={handleSubmit} className="flex gap-3 lg:gap-4 items-end p-3 lg:p-5 relative">
           {isDragging && (
               <div className="absolute inset-0 bg-primary/10 backdrop-blur-sm z-10 flex items-center justify-center">
                   <div className="bg-primary text-brand-bg px-6 py-2 rounded-full font-black text-xs uppercase tracking-widest shadow-xl flex items-center gap-2">
@@ -424,9 +424,9 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
           <button
             type="submit"
             disabled={(!text.trim() && attachments.length === 0) || isUploading}
-            className="shrink-0 w-12 h-12 flex items-center justify-center bg-primary hover:opacity-90 disabled:opacity-20 disabled:grayscale disabled:hover:bg-primary text-brand-bg rounded-2xl transition-all shadow-lg shadow-primary/30 active:scale-90"
+            className="shrink-0 w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center bg-primary hover:opacity-90 disabled:opacity-20 disabled:grayscale disabled:hover:bg-primary text-brand-bg rounded-2xl transition-all shadow-lg shadow-primary/30 active:scale-90"
           >
-            <Send size={20} strokeWidth={3} />
+            <Send size={18} className="lg:w-5 lg:h-5" strokeWidth={3} />
           </button>
         </form>
       </div>

@@ -704,6 +704,12 @@ def main():
 
     strip_vars = {"CLAUDECODE"} | set(agent_cfg.get("strip_env", []))
     env = {k: v for k, v in os.environ.items() if k not in strip_vars}
+    
+    # Merge custom env vars from config
+    custom_env = agent_cfg.get("env", {})
+    if isinstance(custom_env, dict):
+        for k, v in custom_env.items():
+            env[str(k)] = str(v)
 
     resolved = shutil.which(command)
     if not resolved:

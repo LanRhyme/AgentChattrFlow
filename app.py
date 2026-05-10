@@ -217,6 +217,7 @@ def _install_security_middleware(token: str, cfg: dict):
     import app as _self
     _self.session_token = token
     port = cfg.get("server", {}).get("port", 8300)
+    host = cfg.get("server", {}).get("host", "127.0.0.1")
     allowed_origins = {
         f"http://127.0.0.1:{port}",
         f"http://localhost:{port}",
@@ -244,7 +245,17 @@ def _install_security_middleware(token: str, cfg: dict):
 
             # --- Origin check (blocks cross-origin / DNS-rebinding attacks) ---
             origin = request.headers.get("origin")
-            if origin and origin not in allowed_origins:
+            if origin:
+                if origin in allowed_origins:
+                    return await call_next(request)
+                
+                # Support local network access: allow origins matching current Host header
+                # if the server is explicitly bound to all interfaces (0.0.0.0).
+                host_header = request.headers.get("host")
+                if host_header and host == "0.0.0.0":
+                    if origin == f"http://{host_header}" or origin == f"https://{host_header}":
+                        return await call_next(request)
+
                 return JSONResponse(
                     {"error": "forbidden: origin not allowed"},
                     status_code=403,
@@ -2542,6 +2553,14 @@ async def get_agent_types():
                 "color": color,
                 "type": "cli"
             })
+        elif name == "opencode":
+            results.append({
+                "name": "opencode",
+                "mode": "yolo",
+                "label": f"{label} (YOLO)",
+                "color": color,
+                "type": "cli"
+            })
         elif name == "qwen" and not is_api:
              results.append({
                 "name": "qwen",
@@ -2717,7 +2736,15 @@ async def launch_agent(request: Request):
     try:
         import subprocess
         if sys.platform == "win32":
-            subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+            # Prefer Windows Terminal (wt.exe) for multi-tab support if it exists
+            wt_path = shutil.which("wt.exe")
+            if wt_path:
+                # -w 0 means "use the first existing window", nt means "new-tab"
+                # We wrap the command in a single string for wt to execute properly
+                wt_cmd = [wt_path, "-w", "0", "nt", *cmd]
+                subprocess.Popen(wt_cmd)
+            else:
+                subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
         elif sys.platform == "darwin":
             # On macOS, use osascript to open a new Terminal and run the command
             full_cmd = " ".join(f'"{c}"' for c in cmd)

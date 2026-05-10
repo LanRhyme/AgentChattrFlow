@@ -131,6 +131,7 @@ interface ChatStore {
   setReplyingTo: (message: Message | null) => void;
   renameSender: (oldName: string, newName: string) => void;
   setSoundPrefs: (prefs: Record<string, string>) => void;
+  setArchivedChannels: (channels: string[]) => void;
   
   setJobs: (jobs: Job[]) => void;
   updateJob: (job: Job) => void;
@@ -242,6 +243,7 @@ export const useStore = create<ChatStore>((set, get) => ({
       localStorage.setItem('agentchattr-sounds', JSON.stringify(soundPrefs));
       set({ soundPrefs });
   },
+  setArchivedChannels: (archivedChannels) => set({ archivedChannels }),
 
   setJobs: (jobs) => set({ jobs }),
   updateJob: (job) => set((state) => {

@@ -1,5 +1,5 @@
 import { useStore } from '../store/useStore';
-import { Hash, Settings, Briefcase, Shield, ChevronRight, Zap, Plus, Archive, Folder, Terminal, Trash2, Pin } from 'lucide-react';
+import { Hash, Settings, Briefcase, Shield, ChevronRight, Zap, Plus, Archive, Folder, Terminal, Trash2, Pin, X } from 'lucide-react';
 import { useState } from 'react';
 import { JobsPanel } from './JobsPanel';
 import { RulesPanel } from './RulesPanel';
@@ -13,7 +13,7 @@ import { useWebSocket } from '../hooks/useWebSocket';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../utils/theme';
 
-export const Sidebar = () => {
+export const Sidebar = ({ onMobileClose }: { onMobileClose?: () => void }) => {
   const { channels, currentChannel, setCurrentChannel, agents, settings, status, workspaces, activeWorkspace, pinnedAgents } = useStore();
   const { sendAction } = useWebSocket();
   const { t } = useTranslation();
@@ -44,6 +44,7 @@ export const Sidebar = () => {
         },
         body: JSON.stringify({ name }),
       });
+      onMobileClose?.();
     } catch (e) {
       console.error('Error setting active workspace', e);
     }
@@ -67,7 +68,7 @@ export const Sidebar = () => {
     <>
       <aside 
         className={cn(
-          "w-[280px] border-r border-brand-border flex flex-col shrink-0 h-full overflow-hidden shadow-xl z-20 transition-all duration-700",
+          "w-full border-r border-brand-border flex flex-col shrink-0 h-full overflow-hidden shadow-xl z-20 transition-all duration-700 relative",
           settings.bg_image ? "backdrop-blur-xl" : ""
         )}
         style={{
@@ -76,14 +77,20 @@ export const Sidebar = () => {
             : 'var(--brand-panel)'
         }}
       >
-        <div className="px-8 py-10 group cursor-default">
+        <div className="px-8 py-10 group cursor-default flex items-center justify-between">
             <h1 className="font-black text-on-surface text-2xl tracking-tighter leading-none">AgentChattrFlow</h1>
+            <button 
+                onClick={onMobileClose}
+                className="lg:hidden p-2 hover:bg-surface-high rounded-xl text-on-surface-variant transition-colors"
+            >
+                <X size={20} />
+            </button>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar px-4 space-y-6 pb-4">
           <div className="space-y-2">
              <button 
-                onClick={() => setIsSessionsOpen(true)}
+                onClick={() => { setIsSessionsOpen(true); onMobileClose?.(); }}
                 className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-high rounded-2xl transition-all group border border-transparent hover:border-brand-border shadow-sm active:scale-[0.98]"
               >
                 <div className="flex items-center gap-3">
@@ -93,7 +100,7 @@ export const Sidebar = () => {
                 <ChevronRight size={14} className="text-brand-border group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
               </button>
              <button 
-                onClick={() => setIsJobsOpen(true)}
+                onClick={() => { setIsJobsOpen(true); onMobileClose?.(); }}
                 className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-high rounded-2xl transition-all group border border-transparent hover:border-brand-border shadow-sm active:scale-[0.98]"
               >
                 <div className="flex items-center gap-3">
@@ -103,7 +110,7 @@ export const Sidebar = () => {
                 <ChevronRight size={14} className="text-brand-border group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
               </button>
               <button 
-                onClick={() => setIsRulesOpen(true)}
+                onClick={() => { setIsRulesOpen(true); onMobileClose?.(); }}
                 className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-high rounded-2xl transition-all group border border-transparent hover:border-brand-border shadow-sm active:scale-[0.98]"
               >
                 <div className="flex items-center gap-3">
@@ -121,7 +128,7 @@ export const Sidebar = () => {
                   {t('common.workspaces')}
                 </h3>
                 <button 
-                    onClick={() => setIsAddWorkspaceOpen(true)}
+                    onClick={() => { setIsAddWorkspaceOpen(true); onMobileClose?.(); }}
                     className="p-1.5 hover:bg-primary/20 text-primary rounded-lg transition-all"
                     title={t('common.add_workspace')}
                 >
@@ -176,7 +183,7 @@ export const Sidebar = () => {
                 </h3>
                 <div className="flex gap-1">
                     <button 
-                        onClick={() => setIsArchiveOpen(true)}
+                        onClick={() => { setIsArchiveOpen(true); onMobileClose?.(); }}
                         className="p-1.5 hover:bg-on-surface/5 text-on-surface-variant/50 hover:text-amber-500 rounded-lg transition-all"
                         title={t('sidebar.view_archived')}
                     >
@@ -204,7 +211,7 @@ export const Sidebar = () => {
                     )}
                 >
                     <button
-                        onClick={() => setCurrentChannel(channel)}
+                        onClick={() => { setCurrentChannel(channel); onMobileClose?.(); }}
                         className={cn(
                             "flex-1 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all min-w-0 text-left relative",
                             currentChannel === channel
@@ -242,7 +249,7 @@ export const Sidebar = () => {
                   {t('common.intelligence_grid')}
                 </h3>
                 <button 
-                    onClick={() => setIsLaunchAgentOpen(true)}
+                    onClick={() => { setIsLaunchAgentOpen(true); onMobileClose?.(); }}
                     className="p-1.5 hover:bg-primary/20 text-primary rounded-lg transition-all"
                     title={t('common.launch_ai')}
                 >
@@ -257,7 +264,7 @@ export const Sidebar = () => {
                 return (
                   <div
                     key={id}
-                    onClick={() => setSelectedAgentId(id)}
+                    onClick={() => { setSelectedAgentId(id); onMobileClose?.(); }}
                     className={cn(
                         "flex items-center gap-3 px-4 py-2.5 text-sm group cursor-pointer hover:bg-surface-low rounded-xl transition-all active:scale-[0.98]",
                         isPinned ? "text-primary font-bold bg-primary/5" : "text-on-surface-variant"
@@ -295,7 +302,7 @@ export const Sidebar = () => {
 
         <div className="p-4 mt-auto bg-black/10">
           <button 
-            onClick={() => setIsSettingsOpen(true)}
+            onClick={() => { setIsSettingsOpen(true); onMobileClose?.(); }}
             className="w-full flex items-center justify-between p-4 rounded-[24px] bg-surface-high border border-brand-border hover:bg-primary-container hover:border-primary-500/30 transition-all group active:scale-95"
           >
             <div className="text-left min-w-0">

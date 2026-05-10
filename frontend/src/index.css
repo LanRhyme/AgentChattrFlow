@@ -172,11 +172,23 @@
 /* Ensure full screen occupancy */
 html, body, #root {
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
   margin: 0;
   padding: 0;
   overflow: hidden;
   position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Subtle Noise Texture */
