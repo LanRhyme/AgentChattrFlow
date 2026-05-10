@@ -68,6 +68,23 @@ room_settings: dict = {
     "bg_blur": 10,
 }
 
+def _qualify_channel(channel: str) -> str:
+    """Prepend active workspace name to channel for storage isolation."""
+    ws = room_settings.get("active_workspace")
+    if ws and channel:
+        if channel.startswith(f"{ws}:"):
+            return channel
+        return f"{ws}:{channel}"
+    return channel
+
+
+def _unqualify_channel(channel: str) -> str:
+    """Remove active workspace prefix from channel for UI display."""
+    ws = room_settings.get("active_workspace")
+    if ws and channel and channel.startswith(f"{ws}:"):
+        return channel[len(ws) + 1:]
+    return channel
+
 # Channel validation
 _CHANNEL_NAME_RE = _re.compile(r'^[a-z0-9][a-z0-9\-]{0,19}$')
 MAX_CHANNELS = 8
@@ -883,7 +900,10 @@ async def _broadcast(raw_json: str):
 
 
 async def broadcast(msg: dict):
-    data = json.dumps({"type": "message", "data": msg})
+    # Strip workspace prefix for UI display
+    msg_to_send = dict(msg)
+    msg_to_send["channel"] = _unqualify_channel(msg.get("channel", "general"))
+    data = json.dumps({"type": "message", "data": msg_to_send})
     dead = set()
     for client in list(ws_clients):
         try:
@@ -895,7 +915,7 @@ async def broadcast(msg: dict):
 
 async def broadcast_status():
     status = agents.get_status()
-    status["paused"] = any(router.is_paused(ch) for ch in room_settings.get("channels", ["general"]))
+    status["paused"] = any(router.is_paused(_qualify_channel(ch)) for ch in room_settings.get("channels", ["general"]))
     data = json.dumps({"type": "status", "data": status})
     dead = set()
     for client in list(ws_clients):
@@ -920,7 +940,7 @@ async def broadcast_typing(agent_name: str, is_typing: bool):
 async def broadcast_clear(channel: str | None = None):
     payload = {"type": "clear"}
     if channel:
-        payload["channel"] = channel
+        payload["channel"] = _unqualify_channel(channel)
     data = json.dumps(payload)
     dead = set()
     for client in list(ws_clients):
@@ -965,7 +985,10 @@ async def broadcast_rule(action: str, rule: dict):
 
 
 async def broadcast_job(action: str, data: dict):
-    payload = json.dumps({"type": "job", "action": action, "data": data})
+    payload = dict(data)
+    if "channel" in payload:
+        payload["channel"] = _unqualify_channel(payload["channel"])
+    payload = json.dumps({"type": "job", "action": action, "data": payload})
     dead = set()
     for client in list(ws_clients):
         try:
@@ -976,7 +999,10 @@ async def broadcast_job(action: str, data: dict):
 
 
 async def broadcast_schedule(action: str, schedule: dict):
-    payload = json.dumps({"type": "schedule", "action": action, "data": schedule})
+    payload = dict(schedule)
+    if "channel" in payload:
+        payload["channel"] = _unqualify_channel(payload["channel"])
+    payload = json.dumps({"type": "schedule", "action": action, "data": payload})
     dead = set()
     for client in list(ws_clients):
         try:
@@ -987,7 +1013,10 @@ async def broadcast_schedule(action: str, schedule: dict):
 
 
 async def broadcast_session(action: str, session: dict):
-    payload = json.dumps({"type": "session", "action": action, "data": session})
+    payload_data = dict(session)
+    if "channel" in payload_data:
+        payload_data["channel"] = _unqualify_channel(payload_data["channel"])
+    payload = json.dumps({"type": "session", "action": action, "data": payload_data})
     dead = set()
     for client in list(ws_clients):
         try:
@@ -995,6 +1024,28 @@ async def broadcast_session(action: str, session: dict):
         except Exception:
             dead.add(client)
     ws_clients.difference_update(dead)
+
+
+async def broadcast_history():
+    # Send history (per channel based on history_limit)
+    limit_val = room_settings.get("history_limit", "all")
+    count = 10000 if limit_val == "all" else int(limit_val)
+    
+    history = []
+    for ch in room_settings["channels"]:
+        qualified_ch = _qualify_channel(ch)
+        history.extend(store.get_recent(count, channel=qualified_ch))
+    
+    # Sort history by timestamp to interleave messages from different channels correctly
+    history.sort(key=lambda m: m.get("timestamp", 0))
+    
+    # Clear current messages in frontend
+    await broadcast_clear()
+    
+    for msg in history:
+        msg_to_send = dict(msg)
+        msg_to_send["channel"] = _unqualify_channel(msg.get("channel", "general"))
+        await _broadcast(json.dumps({"type": "message", "data": msg_to_send}))
 
 
 async def broadcast_hats():
@@ -1098,13 +1149,16 @@ async def websocket_endpoint(websocket: WebSocket):
     
     history = []
     for ch in room_settings["channels"]:
-        history.extend(store.get_recent(count, channel=ch))
+        qualified_ch = _qualify_channel(ch)
+        history.extend(store.get_recent(count, channel=qualified_ch))
     
     # Sort history by timestamp to interleave messages from different channels correctly
     history.sort(key=lambda m: m.get("timestamp", 0))
     
     for msg in history:
-        await websocket.send_text(json.dumps({"type": "message", "data": msg}))
+        msg_to_send = dict(msg)
+        msg_to_send["channel"] = _unqualify_channel(msg.get("channel", "general"))
+        await websocket.send_text(json.dumps({"type": "message", "data": msg_to_send}))
 
     # Send status
     await broadcast_status()
@@ -1119,6 +1173,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 attachments = event.get("attachments", [])
                 sender = event.get("sender") or room_settings.get("username", "user")
                 channel = event.get("channel", "general")
+                qualified_channel = _qualify_channel(channel)
 
                 if not text and not attachments:
                     continue
@@ -1128,18 +1183,18 @@ async def websocket_endpoint(websocket: WebSocket):
                     cmd_parts = text.split()
                     cmd = cmd_parts[0].lower()
                     if cmd == "/clear":
-                        store.clear(channel=channel)
-                        await broadcast_clear(channel=channel)
+                        store.clear(channel=qualified_channel)
+                        await broadcast_clear(channel=qualified_channel)
                         continue
                     if cmd == "/continue":
-                        router.continue_routing()
-                        store.add("system", "Resuming agent conversation...", msg_type="system", channel=channel)
+                        router.continue_routing(qualified_channel)
+                        store.add("system", "Resuming agent conversation...", msg_type="system", channel=qualified_channel)
                         await broadcast_status()
                         continue
                     # Broadcast slash commands — expand without storing the raw command.
                     # _handle_new_message will store the expanded version.
                     if cmd in ("/hatmaking", "/artchallenge", "/roastreview", "/poetry"):
-                        await _handle_new_message({"sender": sender, "text": text, "channel": channel})
+                        await _handle_new_message({"sender": sender, "text": text, "channel": qualified_channel})
                         continue
 
                 # Store message — the on_message callback handles broadcast + triggers
@@ -1148,7 +1203,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     reply_to = int(reply_to)
 
                 store.add(sender, text, attachments=attachments, reply_to=reply_to,
-                          channel=channel)
+                          channel=qualified_channel)
 
             elif event.get("type") == "delete":
                 ids = event.get("ids", [])
@@ -1210,7 +1265,7 @@ async def websocket_endpoint(websocket: WebSocket):
                             msg = store.add(
                                 author, f"Rule proposal: {text}",
                                 msg_type="rule_proposal",
-                                channel=channel,
+                                channel=_qualify_channel(channel),
                                 metadata={"rule_id": rule["id"], "text": text, "status": "pending"},
                             )
                             # store.add() fires _on_store_message → broadcast already.
@@ -1416,9 +1471,13 @@ async def websocket_endpoint(websocket: WebSocket):
                     continue
                 idx = room_settings["channels"].index(old_name)
                 room_settings["channels"][idx] = new_name
-                store.rename_channel(old_name, new_name)
+                
+                qualified_old = _qualify_channel(old_name)
+                qualified_new = _qualify_channel(new_name)
+                store.rename_channel(qualified_old, qualified_new)
                 import mcp_bridge
-                mcp_bridge.migrate_cursors_rename(old_name, new_name)
+                mcp_bridge.migrate_cursors_rename(qualified_old, qualified_new)
+                
                 _save_settings()
                 await broadcast_settings()
                 # Tell clients to migrate DOM elements
@@ -1443,9 +1502,12 @@ async def websocket_endpoint(websocket: WebSocket):
                     room_settings["archived_channels"].remove(name)
                 else:
                     continue
-                store.delete_channel(name)
+                
+                qualified_name = _qualify_channel(name)
+                store.delete_channel(qualified_name)
                 import mcp_bridge
-                mcp_bridge.migrate_cursors_delete(name)
+                mcp_bridge.migrate_cursors_delete(qualified_name)
+                
                 _save_settings()
                 await broadcast_settings()
 
@@ -1571,10 +1633,21 @@ async def import_history(file: UploadFile = File(...)):
 
 @app.get("/api/messages")
 async def get_messages(since_id: int = 0, limit: int = 50, channel: str = ""):
-    ch = channel if channel else None
+    ch = _qualify_channel(channel) if channel else None
+    prefix = None
+    if not ch:
+        ws = room_settings.get("active_workspace")
+        if ws:
+            prefix = f"{ws}:"
+
     if since_id:
-        return store.get_since(since_id, channel=ch)
-    return store.get_recent(limit, channel=ch)
+        msgs = store.get_since(since_id, channel=ch, channel_prefix=prefix)
+    else:
+        msgs = store.get_recent(limit, channel=ch, channel_prefix=prefix)
+    
+    for m in msgs:
+        m["channel"] = _unqualify_channel(m.get("channel", "general"))
+    return msgs
 
 
 @app.post("/api/send")
@@ -1598,15 +1671,18 @@ async def api_send(request: Request):
     if not text:
         return JSONResponse({"error": "text is required"}, status_code=400)
     channel = body.get("channel", "general")
+    qualified_channel = _qualify_channel(channel)
 
-    msg = store.add(sender, text, channel=channel)
-    return JSONResponse(msg)
+    msg = store.add(sender, text, channel=qualified_channel)
+    msg_to_send = dict(msg)
+    msg_to_send["channel"] = _unqualify_channel(msg_to_send["channel"])
+    return JSONResponse(msg_to_send)
 
 
 @app.get("/api/status")
 async def get_status():
     status = agents.get_status()
-    status["paused"] = any(router.is_paused(ch) for ch in room_settings.get("channels", ["general"]))
+    status["paused"] = any(router.is_paused(_qualify_channel(ch)) for ch in room_settings.get("channels", ["general"]))
     return status
 
 
@@ -1635,6 +1711,7 @@ async def create_schedule(request: Request):
     prompt = body.get("prompt", "")
     targets = body.get("targets", [])
     channel = body.get("channel", "general")
+    qualified_ch = _qualify_channel(channel)
     spec = body.get("spec", "")
     one_shot = body.get("one_shot", False)
     send_at_date = body.get("send_at_date", "")  # "YYYY-MM-DD" for one-shot
@@ -1654,7 +1731,7 @@ async def create_schedule(request: Request):
         except ValueError:
             pass
     s = schedules.create(
-        prompt=prompt, targets=targets, channel=channel,
+        prompt=prompt, targets=targets, channel=qualified_ch,
         interval_seconds=interval_sec, daily_at=daily_at,
         one_shot=one_shot, send_at=send_at,
         created_by=created_by,
@@ -1681,9 +1758,14 @@ async def toggle_schedule(schedule_id: str):
 @app.get("/api/jobs")
 async def get_jobs(channel: str = "", status: str = ""):
     """List jobs, optionally filtered."""
-    ch = channel if channel else None
+    ch = _qualify_channel(channel) if channel else None
     st = status if status else None
-    return jobs.list_all(channel=ch, status=st)
+    items = jobs.list_all(channel=ch, status=st)
+    # Unqualify channel names for UI display
+    for item in items:
+        if "channel" in item:
+            item["channel"] = _unqualify_channel(item["channel"])
+    return items
 
 
 @app.post("/api/messages/{msg_id}/demote")
@@ -1881,6 +1963,7 @@ async def trigger_agent_silent(request: Request):
     agent_name = body.get("agent", "").strip()
     message = body.get("message", "").strip()
     channel = body.get("channel", "general")
+    qualified_channel = _qualify_channel(channel)
     source_msg_id = body.get("source_msg_id")
     if not agent_name or not message:
         return JSONResponse({"error": "agent and message required"}, status_code=400)
@@ -1906,7 +1989,7 @@ async def trigger_agent_silent(request: Request):
             targets = resolved
     for target in targets:
         if agents.is_available(target):
-            await agents.trigger(target, message=message, channel=channel, prompt=custom_prompt)
+            await agents.trigger(target, message=message, channel=qualified_channel, prompt=custom_prompt)
     return {"ok": True, "triggered": targets}
 
 
@@ -1919,12 +2002,13 @@ async def create_job(request: Request):
         return JSONResponse({"error": "title required"}, status_code=400)
     job_type = body.get("type", "job")
     channel = body.get("channel", "general")
+    qualified_channel = _qualify_channel(channel)
     created_by = body.get("created_by", "user")
     anchor_msg_id = body.get("anchor_msg_id")
     assignee = body.get("assignee", "")
     job_body = body.get("body", "")
     result = jobs.create(
-        title=title, job_type=job_type, channel=channel,
+        title=title, job_type=job_type, channel=qualified_channel,
         created_by=created_by, anchor_msg_id=anchor_msg_id,
         assignee=assignee, body=job_body,
     )
@@ -1946,7 +2030,7 @@ async def create_job(request: Request):
                 ws_clients.difference_update(dead)
     # Post breadcrumb in main timeline with job_id for clickable link
     store.add(created_by, f"Job created: {title}", msg_type="job_created",
-              channel=channel, metadata={"job_id": result["id"]})
+              channel=qualified_channel, metadata={"job_id": result["id"]})
     return result
 
 
@@ -2393,6 +2477,7 @@ async def delete_workspace(name: str):
 
     _save_settings()
     await broadcast_settings()
+    await broadcast_history()
     return JSONResponse({"ok": True})
 
 
@@ -2418,6 +2503,7 @@ async def set_active_workspace(request: Request):
 
     _save_settings()
     await broadcast_settings()
+    await broadcast_history()
     return JSONResponse({"ok": True})
 
 
@@ -2789,7 +2875,7 @@ async def start_session(request: Request):
                 status_code=400,
             )
 
-    session = session_engine.start_session(template_id, channel, cast, started_by, goal)
+    session = session_engine.start_session(template_id, _qualify_channel(channel), cast, started_by, goal)
     if not session:
         return JSONResponse({"error": "could not start session (one may already be active)"}, status_code=409)
 
@@ -2798,7 +2884,7 @@ async def start_session(request: Request):
         sender="system",
         text=f"Session started: {tmpl.get('name', template_id)}",
         msg_type="session_start",
-        channel=channel,
+        channel=_qualify_channel(channel),
         metadata={"template_id": template_id, "goal": goal, "session_id": session["id"]},
     )
     session_engine.emit_current_phase_banner(session)
@@ -2830,10 +2916,11 @@ async def request_session_draft(request: Request):
         return JSONResponse({"error": "agent and description required"}, status_code=400)
 
     mention_str = f"@{agent_name}"
+    qualified_ch = _qualify_channel(channel)
     store.add(
         "system",
         f"Requested session draft from {mention_str}. Wait for a proposal.",
-        channel=channel,
+        channel=qualified_ch,
     )
     store.add(
         sender,
@@ -2847,7 +2934,7 @@ async def request_session_draft(request: Request):
         "Mark exactly one phase as `is_output: true` (the final deliverable). "
         f"Keep it focused and sequential. Use the chat_send tool to post your response in the #{channel} channel. "
         "Do NOT respond only in your terminal.",
-        channel=channel,
+        channel=qualified_ch,
         msg_type="session_request",
         metadata={"session_request": True, "mentions": [f"@{agent_name}"], "request": description},
     )

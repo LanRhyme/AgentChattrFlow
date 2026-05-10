@@ -45,6 +45,27 @@ _last_read_job_id: dict[str, int] = {}
 _last_read_lock = threading.Lock()
 PRESENCE_TIMEOUT = 10  # ~2 missed heartbeats (5s interval) = offline
 
+def _qualify_channel(channel: str) -> str:
+    """Prepend active workspace name to channel for storage isolation."""
+    if not room_settings:
+        return channel
+    ws = room_settings.get("active_workspace")
+    if ws and channel:
+        if channel.startswith(f"{ws}:"):
+            return channel
+        return f"{ws}:{channel}"
+    return channel
+
+
+def _unqualify_channel(channel: str) -> str:
+    """Remove active workspace prefix from channel for UI display."""
+    if not room_settings:
+        return channel
+    ws = room_settings.get("active_workspace")
+    if ws and channel and channel.startswith(f"{ws}:"):
+        return channel[len(ws) + 1:]
+    return channel
+
 # Roles — per-instance, persisted to roles.json
 _roles: dict[str, str] = {}  # agent_name → role string
 _ROLES_FILE: Path | None = None
@@ -344,7 +365,7 @@ def chat_send(
         metadata = {"choices": clean_choices, "resolved": False}
 
     msg = store.add(sender, message.strip(), attachments=attachments,
-                    reply_to=reply_id, channel=channel,
+                    reply_to=reply_id, channel=_qualify_channel(channel),
                     msg_type=msg_type, metadata=metadata)
     _update_cursor(sender, [msg], channel)
     with _presence_lock:
@@ -376,10 +397,11 @@ def chat_propose_job(
     title = title.strip()[:80]
     body = (body or "").strip()[:1000]
 
+    qualified_ch = _qualify_channel(channel)
     msg = store.add(
         sender, f"Job proposal: {title}",
         msg_type="job_proposal",
-        channel=channel,
+        channel=qualified_ch,
         metadata={"title": title, "body": body, "status": "pending"},
     )
     _update_cursor(sender, [msg], channel)
@@ -417,7 +439,7 @@ def _serialize_messages(msgs: list[dict]) -> str:
             "text": m["text"],
             "type": m["type"],
             "time": m["time"],
-            "channel": m.get("channel", "general"),
+            "channel": _unqualify_channel(m.get("channel", "general")),
         }
         if m.get("attachments"):
             entry["attachments"] = _resolve_attachments(m["attachments"])
@@ -622,6 +644,13 @@ def chat_read(
         return json.dumps(out, ensure_ascii=False)
 
     ch = channel if channel else None
+    qualified_ch = _qualify_channel(ch) if ch else None
+    prefix = None
+    if not qualified_ch:
+        ws = room_settings.get("active_workspace") if room_settings else None
+        if ws:
+            prefix = f"{ws}:"
+
     # Remember the channel this agent just read so chat_send without an
     # explicit channel defaults here instead of falling back to "general".
     # Only record when a specific channel was requested — broad reads
@@ -631,18 +660,18 @@ def chat_read(
             _last_read_channel[sender] = ch
             _last_read_job_id.pop(sender, None)
     if since_id:
-        msgs = store.get_since(since_id, channel=ch)
+        msgs = store.get_since(since_id, channel=qualified_ch, channel_prefix=prefix)
     elif sender:
-        ch_key = ch if ch else "__all__"
+        ch_key = qualified_ch if qualified_ch else "__all__"
         with _cursors_lock:
             agent_cursors = _cursors.get(sender, {})
             cursor = agent_cursors.get(ch_key, 0)
         if cursor:
-            msgs = store.get_since(cursor, channel=ch)
+            msgs = store.get_since(cursor, channel=qualified_ch, channel_prefix=prefix)
         else:
-            msgs = store.get_recent(limit, channel=ch)
+            msgs = store.get_recent(limit, channel=qualified_ch, channel_prefix=prefix)
     else:
-        msgs = store.get_recent(limit, channel=ch)
+        msgs = store.get_recent(limit, channel=qualified_ch, channel_prefix=prefix)
 
     msgs = msgs[-limit:]
     _update_cursor(sender, msgs, ch)
@@ -690,7 +719,8 @@ def chat_resync(
     if err:
         return err
     ch = channel if channel else None
-    msgs = store.get_recent(limit, channel=ch)
+    qualified_ch = _qualify_channel(ch) if ch else None
+    msgs = store.get_recent(limit, channel=qualified_ch)
     _update_cursor(sender, msgs, ch)
     serialized = _serialize_messages(msgs)
     return serialized
@@ -714,7 +744,9 @@ def chat_join(name: str, channel: str = "general", ctx: Context | None = None) -
     # Block unregistered agent names (stale identity from resumed session)
     if registry and registry.is_agent_family(name) and not registry.is_registered(name):
         return f"Error: '{name}' is not registered. Call chat_claim(sender=your_base_name) to get your identity."
-    store.add(name, f"{name} is online", msg_type="join", channel="general")
+    
+    qualified_ch = _qualify_channel(channel)
+    store.add(name, f"{name} is online", msg_type="join", channel=qualified_ch)
     online = _get_online()
     return f"Joined. Online: {', '.join(online)}"
 
@@ -804,10 +836,11 @@ def chat_rules(
             return "Error: too many rules."
         # Add proposal card to chat timeline
         if store:
+            qualified_ch = _qualify_channel(channel or "general")
             store.add(
                 sender, f"Rule proposal: {result['text']}",
                 msg_type="rule_proposal",
-                channel=channel or "general",
+                channel=qualified_ch,
                 metadata={"rule_id": result["id"], "text": result["text"], "status": "pending"},
             )
         return f"Proposed rule #{result['id']}: '{result['text']}'. Human will review in the Rules panel."
@@ -898,12 +931,17 @@ def chat_summary(
         return err
     action = action.strip().lower()
     channel = (channel or "general").strip()
+    qualified_ch = _qualify_channel(channel)
 
     if action == "read":
-        entry = summaries.get(channel)
+        entry = summaries.get(qualified_ch)
         if not entry:
             return json.dumps({"channel": channel, "text": None, "message": f"No summary for #{channel} yet — one hasn't been written."})
-        return json.dumps(entry, ensure_ascii=False)
+        # Unqualify channel in the returned summary object
+        out = dict(entry)
+        if "channel" in out:
+            out["channel"] = _unqualify_channel(out["channel"])
+        return json.dumps(out, ensure_ascii=False)
 
     if action == "write":
         if not text.strip():
@@ -913,15 +951,15 @@ def chat_summary(
         # Get the latest message ID for staleness tracking
         latest_id = 0
         if store:
-            recent = store.get_recent(1, channel=channel)
+            recent = store.get_recent(1, channel=qualified_ch)
             if recent:
                 latest_id = recent[-1]["id"]
-        result = summaries.write(channel, text, sender, message_id=latest_id)
+        result = summaries.write(qualified_ch, text, sender, message_id=latest_id)
         if result is None:
             return "Error: failed to write summary."
         # Post a visual summary message to the timeline
         if store:
-            store.add(sender, text.strip(), msg_type="summary", channel=channel)
+            store.add(sender, text.strip(), msg_type="summary", channel=qualified_ch)
         return f"Summary for #{channel} updated ({len(text.strip())} chars)."
 
     return f"Unknown action: {action}. Valid actions: read, write."

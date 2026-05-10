@@ -121,18 +121,22 @@ class MessageStore:
                     return m
             return None
 
-    def get_recent(self, count: int = 50, channel: str | None = None) -> list[dict]:
+    def get_recent(self, count: int = 50, channel: str | None = None, channel_prefix: str | None = None) -> list[dict]:
         with self._lock:
             msgs = self._messages
             if channel:
                 msgs = [m for m in msgs if m.get("channel", "general") == channel]
+            elif channel_prefix:
+                msgs = [m for m in msgs if m.get("channel", "general").startswith(channel_prefix)]
             return list(msgs[-count:])
 
-    def get_since(self, since_id: int = 0, channel: str | None = None) -> list[dict]:
+    def get_since(self, since_id: int = 0, channel: str | None = None, channel_prefix: str | None = None) -> list[dict]:
         with self._lock:
             msgs = [m for m in self._messages if m["id"] > since_id]
             if channel:
                 msgs = [m for m in msgs if m.get("channel", "general") == channel]
+            elif channel_prefix:
+                msgs = [m for m in msgs if m.get("channel", "general").startswith(channel_prefix)]
             return msgs
 
     def delete(self, msg_ids: list[int]) -> list[int]:
