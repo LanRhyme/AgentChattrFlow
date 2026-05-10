@@ -6,6 +6,7 @@ import { useWebSocket } from '../hooks/useWebSocket';
 import { useTranslation } from 'react-i18next';
 import { ApiAgentManager } from './ApiAgentManager';
 import { Dropdown } from './Dropdown';
+import { applyThemeToDOM, VALID_THEME_COLORS, VALID_PALETTE_STYLES } from '../utils/theme';
 
 export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const { settings, soundPrefs, setSoundPrefs, agents } = useStore();
@@ -44,23 +45,16 @@ export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
 
   const applyTheme = (theme: string) => {
       setLocalTheme(theme);
-      const root = document.documentElement;
-      root.classList.remove('light');
       handleSave('theme', theme);
   };
 
   const applyColor = (color: string) => {
       setLocalColor(color);
-      const root = document.documentElement;
-      root.setAttribute('data-theme-color', color);
-      // Re-apply palette style to ensure CSS variables update correctly
-      root.setAttribute('data-palette-style', localStyle);
       handleSave('theme_color', color);
   };
 
   const applyPaletteStyle = (style: string) => {
       setLocalStyle(style);
-      document.documentElement.setAttribute('data-palette-style', style);
       handleSave('palette_style', style);
   };
 

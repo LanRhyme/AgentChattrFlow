@@ -186,13 +186,19 @@ export const useStore = create<ChatStore>((set, get) => ({
       const archivedChannels = settings.archived_channels || [];
       const workspaces = settings.workspaces || [];
       const activeWorkspace = settings.active_workspace || null;
-      set((state) => ({ 
-        settings: { ...state.settings, ...settings }, 
-        channels,
-        archivedChannels,
-        workspaces,
-        activeWorkspace
-      }));
+      set((state) => {
+          const next: any = { 
+              settings: { ...state.settings, ...settings }, 
+              channels,
+              archivedChannels,
+              workspaces,
+              activeWorkspace
+          };
+          if (!channels.includes(state.currentChannel) && !archivedChannels.includes(state.currentChannel)) {
+              next.currentChannel = channels[0] || 'general';
+          }
+          return next;
+      });
   },
   setCurrentChannel: (currentChannel) => set({ currentChannel }),
   setTyping: (agent, isTyping) => set((state) => {

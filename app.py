@@ -61,6 +61,8 @@ room_settings: dict = {
     "custom_roles": [],
     "workspaces": [],  # List of {"name": str, "path": str}
     "active_workspace": None,
+    "workspace_channels": {},  # { workspace_name: [channels] }
+    "workspace_archived": {},  # { workspace_name: [channels] }
 }
 
 # Channel validation
@@ -139,6 +141,17 @@ def _load_settings():
             room_settings.update(saved)
         except Exception:
             pass
+    
+    # If active workspace is set, load its specific channels
+    ws = room_settings.get("active_workspace")
+    if ws:
+        ws_channels = room_settings.get("workspace_channels", {}).get(ws)
+        if ws_channels:
+            room_settings["channels"] = ws_channels
+        ws_archived = room_settings.get("workspace_archived", {}).get(ws)
+        if ws_archived:
+            room_settings["archived_channels"] = ws_archived
+
     # Ensure "general" always exists and is first
     if "channels" not in room_settings or not room_settings["channels"]:
         room_settings["channels"] = ["general"]
@@ -147,6 +160,12 @@ def _load_settings():
 
 
 def _save_settings():
+    # Sync current active channels back to the workspace storage before saving
+    ws = room_settings.get("active_workspace")
+    if ws:
+        room_settings.setdefault("workspace_channels", {})[ws] = room_settings.get("channels", ["general"])
+        room_settings.setdefault("workspace_archived", {})[ws] = room_settings.get("archived_channels", [])
+
     p = _settings_path()
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(room_settings, indent=2), "utf-8")
@@ -1261,6 +1280,8 @@ async def websocket_endpoint(websocket: WebSocket):
                     room_settings["theme"] = new["theme"]
                 if "theme_color" in new and new["theme_color"] in ("green", "blue", "purple", "rose"):
                     room_settings["theme_color"] = new["theme_color"]
+                if "palette_style" in new and new["palette_style"] in ("tonal_spot", "vibrant", "expressive", "neutral"):
+                    room_settings["palette_style"] = new["palette_style"]
                 if "rules_refresh_interval" in new:
                     try:
                         ri = int(new["rules_refresh_interval"])
@@ -2314,8 +2335,16 @@ async def add_workspace(request: Request):
     new_ws = {"name": name, "path": str(p.resolve())}
     workspaces.append(new_ws)
     room_settings["workspaces"] = workspaces
+    
+    # Initialize workspace-specific channels
+    room_settings.setdefault("workspace_channels", {})[name] = ["general"]
+    room_settings.setdefault("workspace_archived", {})[name] = []
+
     if room_settings.get("active_workspace") is None:
-        room_settings["active_workspace"] = new_ws["name"]
+        room_settings["active_workspace"] = name
+        room_settings["channels"] = ["general"]
+        room_settings["archived_channels"] = []
+
     _save_settings()
     await broadcast_settings()
     return JSONResponse(new_ws)
@@ -2329,8 +2358,19 @@ async def delete_workspace(name: str):
         return JSONResponse({"error": "not found"}, status_code=404)
 
     room_settings["workspaces"] = filtered
+    
+    # Clean up stored channels
+    if "workspace_channels" in room_settings and name in room_settings["workspace_channels"]:
+        del room_settings["workspace_channels"][name]
+    if "workspace_archived" in room_settings and name in room_settings["workspace_archived"]:
+        del room_settings["workspace_archived"][name]
+
     if room_settings.get("active_workspace") == name:
-        room_settings["active_workspace"] = filtered[0]["name"] if filtered else None
+        new_active = filtered[0]["name"] if filtered else None
+        room_settings["active_workspace"] = new_active
+        if new_active:
+            room_settings["channels"] = room_settings.get("workspace_channels", {}).get(new_active, ["general"])
+            room_settings["archived_channels"] = room_settings.get("workspace_archived", {}).get(new_active, [])
 
     _save_settings()
     await broadcast_settings()
@@ -2345,7 +2385,18 @@ async def set_active_workspace(request: Request):
     if not any(w["name"] == name for w in workspaces):
         return JSONResponse({"error": "not found"}, status_code=404)
 
+    # Save current state to previous active workspace
+    prev = room_settings.get("active_workspace")
+    if prev:
+        room_settings.setdefault("workspace_channels", {})[prev] = room_settings.get("channels", ["general"])
+        room_settings.setdefault("workspace_archived", {})[prev] = room_settings.get("archived_channels", [])
+
     room_settings["active_workspace"] = name
+    
+    # Load state from new active workspace
+    room_settings["channels"] = room_settings.get("workspace_channels", {}).get(name, ["general"])
+    room_settings["archived_channels"] = room_settings.get("workspace_archived", {}).get(name, [])
+
     _save_settings()
     await broadcast_settings()
     return JSONResponse({"ok": True})

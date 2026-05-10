@@ -6,6 +6,7 @@ import { useWebSocket } from './hooks/useWebSocket';
 import { useStore } from './store/useStore';
 import { Hash, Zap, StopCircle, ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { applyThemeToDOM, setupSystemThemeListener } from './utils/theme';
 
 function App() {
   const { currentChannel, sessions, settings } = useStore();
@@ -17,29 +18,13 @@ function App() {
       const theme = settings.theme || 'dark';
       const themeColor = settings.theme_color || 'green';
       const paletteStyle = settings.palette_style || 'tonal_spot';
-      const root = document.documentElement;
       
-      const apply = (val: string) => {
-          if (val === 'light') {
-              root.classList.add('light');
-          } else if (val === 'dark') {
-              root.classList.remove('light');
-          } else {
-              const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-              if (isDark) root.classList.remove('light');
-              else root.classList.add('light');
-          }
-          root.setAttribute('data-theme-color', themeColor);
-          root.setAttribute('data-palette-style', paletteStyle);
-      };
-
-      apply(theme);
+      applyThemeToDOM(theme as any, themeColor as any, paletteStyle as any);
 
       if (theme === 'system') {
-          const media = window.matchMedia('(prefers-color-scheme: dark)');
-          const listener = () => apply('system');
-          media.addEventListener('change', listener);
-          return () => media.removeEventListener('change', listener);
+          return setupSystemThemeListener(() => {
+              applyThemeToDOM('system', themeColor as any, paletteStyle as any);
+          });
       }
   }, [settings.theme, settings.theme_color, settings.palette_style]);
 
