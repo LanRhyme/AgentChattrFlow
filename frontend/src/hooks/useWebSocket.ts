@@ -43,12 +43,13 @@ export const useWebSocket = () => {
 
   const connect = () => {
     soundEnabled.current = false;
-    const token = (window as any).__SESSION_TOKEN__ || "";
     const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const socket = new WebSocket(`${proto}://${window.location.host}/ws?token=${encodeURIComponent(token)}`);
+    const socket = new WebSocket(`${proto}://${window.location.host}/ws`);
 
     socket.onopen = () => {
       console.log('WebSocket connected');
+      const token = (window as any).__SESSION_TOKEN__ || "";
+      socket.send(JSON.stringify({ type: 'auth', token }));
       setSocket(socket);
     };
 

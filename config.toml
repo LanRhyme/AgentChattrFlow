@@ -52,7 +52,7 @@ command = "opencode"
 cwd = ".."
 color = "#38bdf8"
 label = "OpenCode"
-env = { PYTHONHTTPSVERIFY = "0" }
+env = {}
 mcp_inject = "settings_file"
 mcp_settings_path = ".mcp.json"
 mcp_transport = "http"

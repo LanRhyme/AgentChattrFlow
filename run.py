@@ -94,7 +94,7 @@ def main():
 
     # Configure the FastAPI app (creates shared store)
     from app import app, configure, set_event_loop, store as _store_ref
-    configure(config, session_token=session_token)
+    configure(config, tok=session_token)
 
     # Share stores with the MCP bridge
     from app import store, rules, summaries, jobs, room_settings, registry, router as app_router, agents as app_agents, session_engine, session_store
@@ -111,10 +111,10 @@ def main():
 
     # Enable cursor and role persistence across restarts
     data_dir = ROOT / config.get("server", {}).get("data_dir", "./data")
-    mcp_bridge._CURSORS_FILE = data_dir / "mcp_cursors.json"
-    mcp_bridge._load_cursors()
-    mcp_bridge._ROLES_FILE = data_dir / "roles.json"
-    mcp_bridge._load_roles()
+    mcp_bridge.identity.set_cursors_file(data_dir / "mcp_cursors.json")
+    mcp_bridge.identity.load_cursors()
+    mcp_bridge.identity.set_roles_file(data_dir / "roles.json")
+    mcp_bridge.identity.load_roles()
 
     # Start MCP servers in background threads
     http_port = config.get("mcp", {}).get("http_port", 8200)

@@ -30,7 +30,35 @@ log = logging.getLogger(__name__)
 
 app = FastAPI(title="agentchattr")
 
-# --- globals (set by configure()) ---
+
+class AppState:
+    """Encapsulates all mutable server state set by configure().
+
+    Provides a single object for dependency injection and testing.
+    Module-level aliases (store, rules, etc.) are kept for backward
+    compatibility and point to the same objects as this instance.
+    """
+
+    def __init__(self):
+        self.store: MessageStore | None = None
+        self.rules: RuleStore | None = None
+        self.summaries: SummaryStore | None = None
+        self.jobs: JobStore | None = None
+        self.schedules: ScheduleStore | None = None
+        self.router: Router | None = None
+        self.agents: AgentTrigger | None = None
+        self.registry: RuntimeRegistry | None = None
+        self.session_store: SessionStore | None = None
+        self.session_engine: SessionEngine | None = None
+        self.config: dict = {}
+        self.ws_clients: set[WebSocket] = set()
+        self.session_token: str = ""
+
+
+state = AppState()
+
+# --- globals (set by configure()) — these are module-level names for backward
+# compatibility. configure() sets them directly; new code should prefer state.xxx.
 store: MessageStore | None = None
 rules: RuleStore | None = None
 summaries: SummaryStore | None = None
@@ -115,11 +143,21 @@ def _save_hats():
     p.write_text(json.dumps(agent_hats), "utf-8")
 
 
+_SVG_DANGEROUS_TAGS = _re.compile(
+    r'<\s*/?\s*(?:script|iframe|object|embed|foreignObject|use|image)\b[^>]*>',
+    _re.IGNORECASE | _re.DOTALL,
+)
+_DANGEROUS_ATTRS = _re.compile(r'\bon\w+\s*=', _re.IGNORECASE)
+_DANGEROUS_SCHEMES = _re.compile(r'(?:javascript|data|vbscript)\s*:', _re.IGNORECASE)
+_SVG_XLINK_HREF = _re.compile(r'xlink:href\s*=\s*["\'][^"\']*(?:https?://|data:)[^"\']*["\']', _re.IGNORECASE)
+
+
 def _sanitize_svg(svg: str) -> str:
     """Strip dangerous content from SVG string."""
-    svg = _re.sub(r'<script[^>]*>.*?</script>', '', svg, flags=_re.DOTALL | _re.IGNORECASE)
-    svg = _re.sub(r'\bon\w+\s*=', '', svg, flags=_re.IGNORECASE)
-    svg = _re.sub(r'javascript\s*:', '', svg, flags=_re.IGNORECASE)
+    svg = _SVG_DANGEROUS_TAGS.sub('', svg)
+    svg = _DANGEROUS_ATTRS.sub('', svg)
+    svg = _DANGEROUS_SCHEMES.sub('', svg)
+    svg = _SVG_XLINK_HREF.sub('', svg)
     return svg
 
 
@@ -286,11 +324,17 @@ def _install_security_middleware(token: str, cfg: dict):
     app.add_middleware(SecurityMiddleware)
 
 
-def configure(cfg: dict, session_token: str = ""):
-    global store, rules, summaries, jobs, schedules, router, agents, registry, session_store, session_engine, config
-    config = cfg
+def configure(cfg: dict, tok: str = ""):
+    global store, rules, summaries, jobs, schedules, router, agents, registry
+    global session_store, session_engine, config, session_token
+
+    # Set state object
+    state.config = cfg
+    state.session_token = tok
+    session_token = tok
+
     # --- Security: store the session token and install middleware ---
-    _install_security_middleware(session_token, cfg)
+    _install_security_middleware(tok, cfg)
 
     data_dir = cfg.get("server", {}).get("data_dir", "./data")
     Path(data_dir).mkdir(parents=True, exist_ok=True)
@@ -298,71 +342,80 @@ def configure(cfg: dict, session_token: str = ""):
     log_path = Path(data_dir) / "agentchattr_log.jsonl"
     legacy_log_path = Path(data_dir) / "room_log.jsonl"
     if not log_path.exists() and legacy_log_path.exists():
-        # Backward compatibility for existing installs.
         log_path = legacy_log_path
 
-    store = MessageStore(str(log_path))
-    # Initialize store upload dir from config
+    msg_store = MessageStore(str(log_path))
     raw_upload_dir = cfg.get("images", {}).get("upload_dir", "./uploads")
-    store.upload_dir = Path(raw_upload_dir)
-    
-    # Rules store — migrates from legacy decisions.json automatically
+    msg_store.upload_dir = Path(raw_upload_dir)
+    state.store = msg_store
+    store = msg_store
+
     rules_path = Path(data_dir) / "rules.json"
     legacy_decisions = Path(data_dir) / "decisions.json"
     if not rules_path.exists() and legacy_decisions.exists():
         legacy_decisions.rename(rules_path)
-    rules = RuleStore(str(rules_path))
-    rules.on_change(_on_rule_change)
+    r = RuleStore(str(rules_path))
+    r.on_change(_on_rule_change)
+    state.rules = r
+    rules = r
 
-    summaries = SummaryStore(str(Path(data_dir) / "summaries.json"))
+    s = SummaryStore(str(Path(data_dir) / "summaries.json"))
+    state.summaries = s
+    summaries = s
 
-    # Migrate legacy activities.json → jobs.json
     jobs_path = Path(data_dir) / "jobs.json"
     legacy_activities = Path(data_dir) / "activities.json"
     if not jobs_path.exists() and legacy_activities.exists():
         legacy_activities.rename(jobs_path)
+    j = JobStore(str(jobs_path))
+    j.on_change(_on_job_change)
+    state.jobs = j
+    jobs = j
 
-    jobs = JobStore(str(jobs_path))
-    jobs.on_change(_on_job_change)
-
-    schedules = ScheduleStore(str(Path(data_dir) / "schedules.json"))
-    schedules.on_change(_on_schedule_change)
+    sc = ScheduleStore(str(Path(data_dir) / "schedules.json"))
+    sc.on_change(_on_schedule_change)
+    state.schedules = sc
+    schedules = sc
 
     max_hops = cfg.get("routing", {}).get("max_agent_hops", 4)
 
-    # Registry: single source of truth for all live agent state
-    registry = RuntimeRegistry(data_dir=data_dir)
-    registry.seed(cfg.get("agents", {}))
-    registry.on_change(_on_registry_change)
+    reg = RuntimeRegistry(data_dir=data_dir)
+    reg.seed(cfg.get("agents", {}))
+    reg.on_change(_on_registry_change)
+    state.registry = reg
+    registry = reg
 
-    # Router starts with base agent names (backward compat for direct MCP users),
-    # registry.on_change updates it dynamically when instances register/deregister
     agent_names = list(cfg.get("agents", {}).keys())
-    router = Router(
+    rt = Router(
         agent_names=agent_names,
         default_mention=cfg.get("routing", {}).get("default", "none"),
         max_hops=max_hops,
         online_checker=lambda: set(registry.get_active_names()) if registry else set(),
     )
-    agents = AgentTrigger(registry, data_dir=data_dir)
+    state.router = rt
+    router = rt
 
-    # Sessions
+    ag = AgentTrigger(reg, data_dir=data_dir)
+    state.agents = ag
+    agents = ag
+
     ROOT = Path(__file__).parent
-    session_store = SessionStore(
+    ss = SessionStore(
         str(Path(data_dir) / "session_runs.json"),
         templates_dir=str(ROOT / "session_templates"),
     )
-    session_engine = SessionEngine(session_store, store, agents, registry)
-    session_store.on_change(_on_session_change)
+    se = SessionEngine(ss, msg_store, ag, reg)
+    ss.on_change(_on_session_change)
+    state.session_store = ss
+    state.session_engine = se
+    session_store = ss
+    session_engine = se
 
-    # Bridge: when ANY message is added to store (including via MCP),
-    # broadcast to all WebSocket clients
-    store.on_message(_on_store_message)
+    msg_store.on_message(_on_store_message)
 
     _load_settings()
     _load_hats()
 
-    # Apply saved loop guard setting
     if "max_agent_hops" in room_settings:
         router.max_hops = room_settings["max_agent_hops"]
 
@@ -402,26 +455,15 @@ def configure(cfg: dict, session_token: str = ""):
             # Short timeout (10s) prevents slot theft when MCP tool calls are intermittent.
             try:
                 now = _time.time()
-                with mcp_bridge._presence_lock:
-                    currently_online = {
-                        name for name, ts in mcp_bridge._presence.items()
-                        if now - ts < mcp_bridge.PRESENCE_TIMEOUT
-                    }
-                    currently_active = set()
-                    for name, active in mcp_bridge._activity.items():
-                        if active:
-                            if now - mcp_bridge._activity_ts.get(name, 0) < mcp_bridge.ACTIVITY_TIMEOUT:
-                                currently_active.add(name)
-                            else:
-                                mcp_bridge._activity[name] = False  # auto-expire
+                currently_online = set(mcp_bridge.identity.get_online())
+                currently_active = mcp_bridge.identity.get_active_set()
 
                 # Crash timeout: if a wrapper hasn't heartbeated for 60s,
                 # it's dead — deregister it to free the slot.
                 _CRASH_TIMEOUT = 15
                 registered = set(registry.get_all_names())
                 for name in registered:
-                    with mcp_bridge._presence_lock:
-                        last_seen = mcp_bridge._presence.get(name, 0)
+                    last_seen = mcp_bridge.identity.last_seen(name)
                     if last_seen > 0 and now - last_seen > _CRASH_TIMEOUT:
                         log.info(f"Crash timeout: deregistering {name} (no heartbeat for {_CRASH_TIMEOUT}s)")
                         result = registry.deregister(name)
@@ -452,10 +494,9 @@ def configure(cfg: dict, session_token: str = ""):
                     if not inst:
                         continue
                     # Skip names that were just renamed (not actually offline)
-                    with mcp_bridge._presence_lock:
-                        was_renamed = name in mcp_bridge._renamed_from
-                        if was_renamed:
-                            mcp_bridge._renamed_from.discard(name)
+                    was_renamed = mcp_bridge.identity.is_renamed(name)
+                    if was_renamed:
+                        mcp_bridge.identity.discard_renamed(name)
                     if was_renamed:
                         continue
                     # Post leave message ONCE per offline transition (debounced)
@@ -470,10 +511,9 @@ def configure(cfg: dict, session_token: str = ""):
                 went_offline = (_known_online - currently_online) - timed_out
                 for name in went_offline:
                     # Skip leave messages for names that were just renamed
-                    with mcp_bridge._presence_lock:
-                        was_renamed = name in mcp_bridge._renamed_from
-                        if was_renamed:
-                            mcp_bridge._renamed_from.discard(name)
+                    was_renamed = mcp_bridge.identity.is_renamed(name)
+                    if was_renamed:
+                        mcp_bridge.identity.discard_renamed(name)
                     if was_renamed:
                         continue
                     if not registry.is_registered(name) and name not in _posted_leave:
@@ -484,13 +524,10 @@ def configure(cfg: dict, session_token: str = ""):
                     asyncio.run_coroutine_threadsafe(broadcast_status(), _event_loop)
 
                 # Clear stale activity for agents that went offline
-                with mcp_bridge._presence_lock:
-                    stale_active = [n for n in mcp_bridge._activity
-                                    if mcp_bridge._activity.get(n) and n not in currently_online]
-                    for n in stale_active:
-                        mcp_bridge._activity[n] = False
-                    if stale_active:
-                        currently_active -= set(stale_active)
+                mcp_bridge.identity.expire_stale_activity(currently_online)
+                stale_active = currently_active - currently_online
+                if stale_active:
+                    currently_active -= stale_active
 
                 # Broadcast status on any change (online set or activity set)
                 if currently_active != _known_active or _known_online != currently_online:
@@ -1103,16 +1140,21 @@ def _on_registry_change():
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    # --- Security: validate session token on WebSocket connect ---
-    token = websocket.query_params.get("token", "")
-    if token != session_token:
-        # Must accept before closing so the browser receives the close frame.
-        # Code 4003 triggers an auto-reload in the client to pick up the new token.
-        await websocket.accept()
+    # Accept first, then validate via the initial auth message.
+    # This avoids exposing the session token in the URL (server logs, browser history).
+    await websocket.accept()
+
+    # --- Security: expect {"type":"auth","token":"..."} as first message ---
+    try:
+        auth_msg = await asyncio.wait_for(websocket.receive_json(), timeout=5.0)
+    except Exception:
+        await websocket.close(code=4003, reason="forbidden: expected auth message")
+        return
+
+    if auth_msg.get("type") != "auth" or auth_msg.get("token") != session_token:
         await websocket.close(code=4003, reason="forbidden: invalid session token")
         return
 
-    await websocket.accept()
     ws_clients.add(websocket)
 
     # Send settings
@@ -1882,7 +1924,7 @@ async def resolve_decision(msg_id: int, request: Request):
                     msg["metadata"] = meta
                     channel = msg.get("channel", "general")
                     sender = msg.get("sender", "")
-                    store._rewrite()
+                    store._rewrite_jsonl()
     if error:
         return JSONResponse({"error": error[0]}, status_code=error[1])
     # Post the chosen answer as a regular chat message tagged @sender
@@ -2260,8 +2302,7 @@ async def register_agent(request: Request):
         return JSONResponse({"error": f"unknown base: {base}"}, status_code=400)
     # Touch presence so the instance doesn't immediately time out
     import mcp_bridge
-    with mcp_bridge._presence_lock:
-        mcp_bridge._presence[result["name"]] = __import__("time").time()
+    mcp_bridge.identity.touch_presence(result["name"])
     # If slot 1 was renamed (e.g. "claude" → "claude-1"), migrate state
     renamed = result.pop("_renamed_slot1", None)
     if renamed:
@@ -2376,20 +2417,18 @@ async def heartbeat(agent_name: str, request: Request):
         return JSONResponse({"error": "authenticated agent session required"}, status_code=403)
 
     current_name = auth_inst["name"] if auth_inst else agent_name
-    with mcp_bridge._presence_lock:
-        mcp_bridge._presence[current_name] = __import__("time").time()
+    mcp_bridge.identity.touch_presence(current_name)
     # Optional activity report from wrapper's terminal monitor
     _activity_changed = False
     try:
         body = await request.json()
         if "active" in body:
             active_val = bool(body["active"])
-            was_active = mcp_bridge._activity.get(current_name, False)
+            was_active = mcp_bridge.identity.is_active(current_name)
             mcp_bridge.set_active(current_name, active_val)
             _activity_changed = was_active != active_val
         if "screen" in body:
-            with mcp_bridge._presence_lock:
-                mcp_bridge._thoughts[current_name] = str(body["screen"])
+            mcp_bridge.identity.set_thoughts(current_name, str(body["screen"]))
             _activity_changed = True # Force broadcast if screen content arrives
     except Exception:
         pass  # No body = plain heartbeat
@@ -2416,9 +2455,7 @@ async def heartbeat(agent_name: str, request: Request):
             resp["pending"] = inst.get("state") == "pending"
             # Also update presence under the canonical name
             if canonical != current_name:
-                now = __import__("time").time()
-                with mcp_bridge._presence_lock:
-                    mcp_bridge._presence[canonical] = now
+                mcp_bridge.identity.touch_presence(canonical)
     return resp
 
 

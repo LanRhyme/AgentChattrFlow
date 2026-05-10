@@ -13,6 +13,7 @@ import threading
 from pathlib import Path
 
 from mcp.server.fastmcp import Context, FastMCP
+from mcp_identity import McpIdentity
 
 log = logging.getLogger(__name__)
 
@@ -26,24 +27,13 @@ registry = None       # set by run.py — RuntimeRegistry instance
 config = None         # set by run.py — full config.toml dict
 router = None         # set by run.py — Router instance
 agents = None         # set by run.py — AgentManager instance
-_presence: dict[str, float] = {}
-_activity: dict[str, bool] = {}   # True = screen changed on last poll
-_activity_ts: dict[str, float] = {}  # timestamp of last active=True heartbeat
-_thoughts: dict[str, str] = {}    # agent_name -> latest screen buffer/logs
-ACTIVITY_TIMEOUT = 8  # auto-expire activity after 8s without a fresh active=True
-_presence_lock = threading.Lock()   # guards _presence, _activity, and _thoughts
-_renamed_from: set[str] = set()    # old names from renames — suppress leave messages
-_cursors: dict[str, dict[str, int]] = {}  # agent_name → {channel_name → last_id}
-_cursors_lock = threading.Lock()
+
+# Identity/presence/cursor/role management — encapsulated in McpIdentity
+identity = McpIdentity()
 _empty_read_count: dict[str, int] = {}  # sender → consecutive empty reads
-# Last channel (or job_id) each agent explicitly read from. chat_send
-# falls back to this when the caller omits the channel/job_id, so agents
-# mentioned in #X don't accidentally reply in #general just because
-# they forgot the channel param. Closes #58.
-_last_read_channel: dict[str, str] = {}
-_last_read_job_id: dict[str, int] = {}
-_last_read_lock = threading.Lock()
-PRESENCE_TIMEOUT = 10  # ~2 missed heartbeats (5s interval) = offline
+
+ACTIVITY_TIMEOUT = 8
+PRESENCE_TIMEOUT = 10
 
 def _qualify_channel(channel: str) -> str:
     """Prepend active workspace name to channel for storage isolation."""
@@ -66,12 +56,7 @@ def _unqualify_channel(channel: str) -> str:
         return channel[len(ws) + 1:]
     return channel
 
-# Roles — per-instance, persisted to roles.json
-_roles: dict[str, str] = {}  # agent_name → role string
-_ROLES_FILE: Path | None = None
-
 # Cursor persistence — set by run.py to enable saving cursors across restarts
-_CURSORS_FILE: Path | None = None
 
 _MCP_INSTRUCTIONS = (
     "agentchattr — a shared chat channel for coordinating development between AI agents and humans. "
@@ -246,9 +231,8 @@ def chat_send(
     # whatever target this sender last read from. Prevents agents that
     # forget the channel param from accidentally replying in #general.
     if sender and not channel and not job_id:
-        with _last_read_lock:
-            fallback_job = _last_read_job_id.get(sender, 0)
-            fallback_channel = _last_read_channel.get(sender, "")
+        fallback_job = identity.get_last_read_job_id(sender)
+        fallback_channel = identity.get_last_read_channel(sender)
         if fallback_job:
             job_id = fallback_job
         elif fallback_channel:
@@ -301,8 +285,7 @@ def chat_send(
                                attachments=job_attachments)
         if msg is None:
             return f"Error: job #{job_id} not found."
-        with _presence_lock:
-            _presence[sender] = time.time()
+        identity.touch_presence(sender)
 
         # Route @mentions in job messages to trigger other agents
         if router and agents:
@@ -368,8 +351,7 @@ def chat_send(
                     reply_to=reply_id, channel=_qualify_channel(channel),
                     msg_type=msg_type, metadata=metadata)
     _update_cursor(sender, [msg], channel)
-    with _presence_lock:
-        _presence[sender] = time.time()
+    identity.touch_presence(sender)
     return f"Sent (id={msg['id']})"
 
 
@@ -405,8 +387,7 @@ def chat_propose_job(
         metadata={"title": title, "body": body, "status": "pending"},
     )
     _update_cursor(sender, [msg], channel)
-    with _presence_lock:
-        _presence[sender] = time.time()
+    identity.touch_presence(sender)
     return f"Proposed job (msg_id={msg['id']}): {title}"
 
 
@@ -455,132 +436,62 @@ def _serialize_messages(msgs: list[dict]) -> str:
 
 def _load_cursors():
     """Load cursor state from disk (called by run.py after store init)."""
-    global _cursors
-    if _CURSORS_FILE is None or not _CURSORS_FILE.exists():
-        return
-    try:
-        data = json.loads(_CURSORS_FILE.read_text("utf-8"))
-        with _cursors_lock:
-            _cursors.update(data)
-    except Exception:
-        log.warning("Failed to load cursor state from %s", _CURSORS_FILE)
+    identity.load_cursors()
 
 
 def _save_cursors():
-    """Persist cursor state to disk atomically (write temp + rename)."""
-    if _CURSORS_FILE is None:
-        return
-    try:
-        with _cursors_lock:
-            snapshot = dict(_cursors)
-        _CURSORS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        tmp = _CURSORS_FILE.with_suffix(".tmp")
-        tmp.write_text(json.dumps(snapshot), "utf-8")
-        os.replace(tmp, _CURSORS_FILE)  # atomic on POSIX
-    except Exception:
-        log.warning("Failed to save cursor state to %s", _CURSORS_FILE)
+    """Persist cursor state to disk atomically."""
+    identity.save_cursors()
 
 
 def _load_roles():
     """Load persisted roles from disk."""
-    global _roles
-    if _ROLES_FILE is None or not _ROLES_FILE.exists():
-        return
-    try:
-        _roles = json.loads(_ROLES_FILE.read_text("utf-8"))
-    except Exception:
-        log.warning("Failed to load roles from %s", _ROLES_FILE)
+    identity.load_roles()
 
 
 def _save_roles():
     """Persist roles to disk atomically."""
-    if _ROLES_FILE is None:
-        return
-    try:
-        _ROLES_FILE.parent.mkdir(parents=True, exist_ok=True)
-        tmp = _ROLES_FILE.with_suffix(".tmp")
-        tmp.write_text(json.dumps(_roles), "utf-8")
-        os.replace(tmp, _ROLES_FILE)
-    except Exception:
-        log.warning("Failed to save roles to %s", _ROLES_FILE)
+    identity.save_roles()
 
 
 def set_role(name: str, role: str):
     """Set or clear an agent's role. Empty string clears."""
-    if role:
-        _roles[name] = role
-    else:
-        _roles.pop(name, None)
-    _save_roles()
+    identity.set_role(name, role)
 
 
 def get_role(name: str) -> str:
     """Get an agent's current role, or empty string."""
-    return _roles.get(name, "")
+    return identity.get_role(name)
 
 
 def get_all_roles() -> dict[str, str]:
     """All active roles."""
-    return dict(_roles)
+    return identity.get_all_roles()
 
 
 def migrate_identity(old_name: str, new_name: str):
-    """Migrate all runtime state when an agent is renamed (presence, cursors, activity, roles)."""
-    with _presence_lock:
-        if old_name in _presence:
-            _presence[new_name] = _presence.pop(old_name)
-        if old_name in _activity:
-            _activity[new_name] = _activity.pop(old_name)
-        if old_name in _activity_ts:
-            _activity_ts[new_name] = _activity_ts.pop(old_name)
-        _renamed_from.add(old_name)  # suppress leave message for old name
-    with _cursors_lock:
-        if old_name in _cursors:
-            _cursors[new_name] = _cursors.pop(old_name)
-    if old_name in _roles:
-        _roles[new_name] = _roles.pop(old_name)
-        _save_roles()
-    _save_cursors()
+    """Migrate all runtime state when an agent is renamed."""
+    identity.migrate_identity(old_name, new_name)
 
 
 def purge_identity(name: str):
-    """Remove all runtime state for a deregistered agent (presence, activity, cursors, roles)."""
-    with _presence_lock:
-        _presence.pop(name, None)
-        _activity.pop(name, None)
-        _activity_ts.pop(name, None)
-    with _cursors_lock:
-        _cursors.pop(name, None)
-    if name in _roles:
-        del _roles[name]
-        _save_roles()
-    _save_cursors()
+    """Remove all runtime state for a deregistered agent."""
+    identity.purge_identity(name)
 
 
 def migrate_cursors_rename(old_name: str, new_name: str):
     """Move cursor entries from old channel name to new channel name."""
-    with _cursors_lock:
-        for agent_cursors in _cursors.values():
-            if old_name in agent_cursors:
-                agent_cursors[new_name] = agent_cursors.pop(old_name)
-    _save_cursors()
+    identity.migrate_cursors_rename(old_name, new_name)
 
 
 def migrate_cursors_delete(channel: str):
     """Remove cursor entries for a deleted channel."""
-    with _cursors_lock:
-        for agent_cursors in _cursors.values():
-            agent_cursors.pop(channel, None)
-    _save_cursors()
+    identity.migrate_cursors_delete(channel)
 
 
 def _update_cursor(sender: str, msgs: list[dict], channel: str | None):
     if sender and msgs:
-        ch_key = channel if channel else "__all__"
-        with _cursors_lock:
-            agent_cursors = _cursors.setdefault(sender, {})
-            agent_cursors[ch_key] = msgs[-1]["id"]
-        _save_cursors()
+        identity.update_cursor(sender, msgs, channel or "__all__")
 
 
 def chat_read(
@@ -613,9 +524,7 @@ def chat_read(
             return f"Error: job #{job_id} not found."
         # Remember so chat_send defaults back to this job thread.
         if sender:
-            with _last_read_lock:
-                _last_read_job_id[sender] = job_id
-                _last_read_channel.pop(sender, None)
+            identity.set_last_read_job_id(sender, job_id)
         title = (job.get("title") or "").strip()
         body = (job.get("body") or "").strip()
         header_text = f"Job: {title}" if title else f"Job #{job_id}"
@@ -660,16 +569,12 @@ def chat_read(
     # Only record when a specific channel was requested — broad reads
     # (no channel) shouldn't overwrite a useful last-read.
     if sender and ch:
-        with _last_read_lock:
-            _last_read_channel[sender] = ch
-            _last_read_job_id.pop(sender, None)
+        identity.set_last_read_channel(sender, ch)
     if since_id:
         msgs = store.get_since(since_id, channel=qualified_ch, channel_prefix=prefix)
     elif sender:
         ch_key = qualified_ch if qualified_ch else "__all__"
-        with _cursors_lock:
-            agent_cursors = _cursors.get(sender, {})
-            cursor = agent_cursors.get(ch_key, 0)
+        cursor = identity.get_cursor(sender, ch_key)
         if cursor:
             msgs = store.get_since(cursor, channel=qualified_ch, channel_prefix=prefix)
         else:
@@ -773,41 +678,23 @@ def chat_who() -> str:
 
 def _touch_presence(name: str):
     """Update presence timestamp — called on any MCP tool use."""
-    with _presence_lock:
-        _presence[name] = time.time()
+    identity.touch_presence(name)
 
 
 def _get_online() -> list[str]:
-    now = time.time()
-    with _presence_lock:
-        return [name for name, ts in _presence.items()
-                if now - ts < PRESENCE_TIMEOUT]
+    return identity.get_online()
 
 
 def is_online(name: str) -> bool:
-    now = time.time()
-    with _presence_lock:
-        return name in _presence and now - _presence.get(name, 0) < PRESENCE_TIMEOUT
+    return identity.is_online(name)
 
 
 def set_active(name: str, active: bool):
-    with _presence_lock:
-        _activity[name] = active
-        if active:
-            _activity_ts[name] = __import__("time").time()
+    identity.set_active(name, active)
 
 
 def is_active(name: str) -> bool:
-    import time as _time
-    with _presence_lock:
-        if not _activity.get(name, False):
-            return False
-        # Auto-expire stale activity
-        ts = _activity_ts.get(name, 0)
-        if _time.time() - ts > ACTIVITY_TIMEOUT:
-            _activity[name] = False
-            return False
-        return True
+    return identity.is_active(name)
 
 
 def chat_rules(

@@ -14,6 +14,7 @@ class MessageStore:
         self._path.parent.mkdir(parents=True, exist_ok=True)
         self._todos_path = self._path.parent / "todos.json"
         self._messages: list[dict] = []
+        self._by_id: dict[int, dict] = {}  # msg_id → message dict (O(1) lookup index)
         self._next_id: int = 0  # monotonically increasing, survives deletions
         self._todos: dict[int, str] = {}  # msg_id → "todo" | "done"
         self._lock = threading.Lock()
@@ -41,6 +42,7 @@ class MessageStore:
                     if msg["id"] > max_id:
                         max_id = msg["id"]
                     self._messages.append(msg)
+                    self._by_id[msg["id"]] = msg
                 except json.JSONDecodeError:
                     continue
         self._next_id = max_id + 1
@@ -76,6 +78,7 @@ class MessageStore:
                 msg["metadata"] = metadata
             self._next_id += 1
             self._messages.append(msg)
+            self._by_id[msg["id"]] = msg
             if not _bulk:
                 with open(self._path, "a", encoding="utf-8") as f:
                     f.write(json.dumps(msg, ensure_ascii=False) + "\n")
@@ -95,7 +98,7 @@ class MessageStore:
     def flush_bulk(self):
         """Write all in-memory messages to disk. Call after bulk add operations."""
         with self._lock:
-            self._rewrite()
+            self._rewrite_jsonl()
 
     def update_reply_to(self, msg_id: int, reply_to: int):
         """Set reply_to on an existing message (used by import to rebuild links)."""
@@ -103,23 +106,12 @@ class MessageStore:
             for m in self._messages:
                 if m["id"] == msg_id:
                     m["reply_to"] = reply_to
-                    self._rewrite()
+                    self._rewrite_jsonl()
                     return
-
-    def _rewrite(self):
-        """Rewrite the full JSONL file from memory (used after bulk edits)."""
-        with open(self._path, "w", encoding="utf-8") as f:
-            for m in self._messages:
-                f.write(json.dumps(m, ensure_ascii=False) + "\n")
-            f.flush()
-            os.fsync(f.fileno())
 
     def get_by_id(self, msg_id: int) -> dict | None:
         with self._lock:
-            for m in self._messages:
-                if m["id"] == msg_id:
-                    return m
-            return None
+            return self._by_id.get(msg_id)
 
     def get_recent(self, count: int = 50, channel: str | None = None, channel_prefix: str | None = None) -> list[dict]:
         with self._lock:
@@ -156,6 +148,7 @@ class MessageStore:
                         if mid in self._todos:
                             del self._todos[mid]
                         self._messages.pop(i)
+                        self._by_id.pop(mid, None)
                         deleted.append(mid)
                         break
             if deleted:
@@ -209,6 +202,8 @@ class MessageStore:
             if channel:
                 removed_ids = {m["id"] for m in self._messages if m.get("channel", "general") == channel}
                 self._messages = [m for m in self._messages if m.get("channel", "general") != channel]
+                for mid in removed_ids:
+                    self._by_id.pop(mid, None)
                 self._rewrite_jsonl()
                 # Clean up todos for cleared messages
                 for tid in list(self._todos.keys()):
@@ -218,6 +213,7 @@ class MessageStore:
                     self._save_todos()
             else:
                 self._messages.clear()
+                self._by_id.clear()
                 self._path.write_text("")
                 self._todos.clear()
                 self._save_todos()
@@ -263,24 +259,25 @@ class MessageStore:
     # --- Todos ---
 
     def _load_todos(self):
-        # Migrate old pins.json (list of ints) → todos.json (dict of id→status)
-        old_pins = self._todos_path.parent / "pins.json"
-        if old_pins.exists() and not self._todos_path.exists():
-            try:
-                ids = json.loads(old_pins.read_text("utf-8"))
-                if isinstance(ids, list):
-                    self._todos = {int(i): "todo" for i in ids}
-                    self._save_todos()
-                    old_pins.unlink()
-            except Exception:
-                pass
+        with self._lock:
+            # Migrate old pins.json (list of ints) → todos.json (dict of id→status)
+            old_pins = self._todos_path.parent / "pins.json"
+            if old_pins.exists() and not self._todos_path.exists():
+                try:
+                    ids = json.loads(old_pins.read_text("utf-8"))
+                    if isinstance(ids, list):
+                        self._todos = {int(i): "todo" for i in ids}
+                        self._save_todos()
+                        old_pins.unlink()
+                except Exception:
+                    pass
 
-        if self._todos_path.exists():
-            try:
-                raw = json.loads(self._todos_path.read_text("utf-8"))
-                self._todos = {int(k): v for k, v in raw.items()}
-            except Exception:
-                self._todos = {}
+            if self._todos_path.exists():
+                try:
+                    raw = json.loads(self._todos_path.read_text("utf-8"))
+                    self._todos = {int(k): v for k, v in raw.items()}
+                except Exception:
+                    self._todos = {}
 
     def _save_todos(self):
         self._todos_path.write_text(

@@ -30,7 +30,7 @@ export interface Rule {
   id: number;
   text: string;
   status: 'active' | 'draft';
-  owner: string;
+  author: string;
   created_at: number;
   reason?: string;
 }

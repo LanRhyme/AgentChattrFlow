@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from wrapper import _write_json_mcp_settings  # noqa: E402
+from wrapper_mcp_inject import write_json_mcp_settings  # noqa: E402
 
 
 class JsonMcpSettingsTests(unittest.TestCase):
@@ -29,7 +29,7 @@ class JsonMcpSettingsTests(unittest.TestCase):
 
     def test_default_http_uses_httpUrl_key(self):
         # Backward compat: no http_key override → "httpUrl" (Gemini-style)
-        _write_json_mcp_settings(self.target, "http://127.0.0.1:8200/mcp",
+        write_json_mcp_settings(self.target, "http://127.0.0.1:8200/mcp",
                                  transport="http")
         data = self._read()
         entry = data["mcpServers"]["agentchattr"]
@@ -39,7 +39,7 @@ class JsonMcpSettingsTests(unittest.TestCase):
 
     def test_http_key_override_writes_url_key(self):
         # CodeBuddy-style: http_key="url" → MCP-standard "url" key
-        _write_json_mcp_settings(self.target, "http://127.0.0.1:8200/mcp",
+        write_json_mcp_settings(self.target, "http://127.0.0.1:8200/mcp",
                                  transport="http", http_key="url")
         data = self._read()
         entry = data["mcpServers"]["agentchattr"]
@@ -49,7 +49,7 @@ class JsonMcpSettingsTests(unittest.TestCase):
 
     def test_sse_transport_always_uses_url(self):
         # SSE doesn't use httpUrl regardless of http_key setting
-        _write_json_mcp_settings(self.target, "http://127.0.0.1:8201/sse",
+        write_json_mcp_settings(self.target, "http://127.0.0.1:8201/sse",
                                  transport="sse")
         data = self._read()
         entry = data["mcpServers"]["agentchattr"]
@@ -57,7 +57,7 @@ class JsonMcpSettingsTests(unittest.TestCase):
         self.assertEqual(entry["url"], "http://127.0.0.1:8201/sse")
 
     def test_bearer_token_written_as_authorization_header(self):
-        _write_json_mcp_settings(self.target, "http://127.0.0.1:8200/mcp",
+        write_json_mcp_settings(self.target, "http://127.0.0.1:8200/mcp",
                                  transport="http", token="secret-token-123",
                                  http_key="url")
         entry = self._read()["mcpServers"]["agentchattr"]
@@ -69,7 +69,7 @@ class JsonMcpSettingsTests(unittest.TestCase):
         self.target.write_text(json.dumps({
             "mcpServers": {"some-other-server": {"type": "http", "url": "http://elsewhere"}}
         }))
-        _write_json_mcp_settings(self.target, "http://127.0.0.1:8200/mcp",
+        write_json_mcp_settings(self.target, "http://127.0.0.1:8200/mcp",
                                  transport="http", http_key="url")
         data = self._read()
         self.assertIn("some-other-server", data["mcpServers"])

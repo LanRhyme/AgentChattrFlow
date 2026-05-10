@@ -435,15 +435,30 @@ export const MessageList = () => {
   const { t } = useTranslation();
   const filteredMessages = messages.filter(m => m.channel === currentChannel);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const prevCountRef = useRef(filteredMessages.length);
+  const isNearBottomRef = useRef(true);
 
+  // Track whether the user is near the bottom of the scroll area
+  const handleScroll = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const threshold = 150;
+    isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+  };
+
+  // Only auto-scroll when a NEW message is added and user is near bottom
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [filteredMessages]);
+    if (filteredMessages.length > prevCountRef.current && isNearBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+    prevCountRef.current = filteredMessages.length;
+  }, [filteredMessages.length]);
 
   const activeTyping = status?.typing?.filter(Boolean) || [];
 
   return (
-    <div className="flex-1 overflow-y-auto custom-scrollbar pt-4 sm:pt-6 pb-20 flex flex-col">
+    <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto custom-scrollbar pt-4 sm:pt-6 pb-20 flex flex-col">
       {filteredMessages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-12 opacity-20 select-none m-auto animate-in fade-in zoom-in duration-700">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-[28px] sm:rounded-[32px] bg-on-surface/[0.02] border border-brand-border flex items-center justify-center mb-6">
