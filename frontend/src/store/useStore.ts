@@ -95,6 +95,8 @@ interface ChatStore {
   soundPrefs: Record<string, string>;
   workspaces: Workspace[];
   activeWorkspace: string | null;
+  pinnedAgents: string[];
+  agentPositions: Record<string, { x: number, y: number }>;
   
   // Shared Socket Ref
   socket: WebSocket | null;
@@ -131,6 +133,9 @@ interface ChatStore {
   updateSession: (session: Session) => void;
   removeSession: (channel: string) => void;
   setTemplates: (templates: SessionTemplate[]) => void;
+
+  togglePinAgent: (id: string) => void;
+  updateAgentPosition: (id: string, x: number, y: number) => void;
 }
 
 export const useStore = create<ChatStore>((set, get) => ({
@@ -151,6 +156,8 @@ export const useStore = create<ChatStore>((set, get) => ({
   soundPrefs: JSON.parse(localStorage.getItem('agentchattr-sounds') || '{}'),
   workspaces: [],
   activeWorkspace: null,
+  pinnedAgents: [],
+  agentPositions: {},
   socket: null,
 
   setSocket: (socket) => set({ socket }),
@@ -256,4 +263,21 @@ export const useStore = create<ChatStore>((set, get) => ({
       return { sessions: next };
   }),
   setTemplates: (templates) => set({ templates }),
+  togglePinAgent: (id) => set((state) => {
+      const isPinned = state.pinnedAgents.includes(id);
+      if (isPinned) {
+          return { pinnedAgents: state.pinnedAgents.filter(a => a !== id) };
+      } else {
+          return { 
+              pinnedAgents: [...state.pinnedAgents, id],
+              agentPositions: { 
+                  ...state.agentPositions, 
+                  [id]: state.agentPositions[id] || { x: 100 + state.pinnedAgents.length * 20, y: 100 + state.pinnedAgents.length * 20 }
+              }
+          };
+      }
+  }),
+  updateAgentPosition: (id, x, y) => set((state) => ({
+      agentPositions: { ...state.agentPositions, [id]: { x, y } }
+  })),
 }));

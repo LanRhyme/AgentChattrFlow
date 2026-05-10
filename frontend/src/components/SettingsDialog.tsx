@@ -6,7 +6,6 @@ import { useWebSocket } from '../hooks/useWebSocket';
 import { useTranslation } from 'react-i18next';
 import { ApiAgentManager } from './ApiAgentManager';
 import { Dropdown } from './Dropdown';
-import { applyThemeToDOM, VALID_THEME_COLORS, VALID_PALETTE_STYLES } from '../utils/theme';
 
 export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const { settings, soundPrefs, setSoundPrefs, agents } = useStore();

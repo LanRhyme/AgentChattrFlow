@@ -204,13 +204,13 @@ def get_activity_checker(pid_holder, agent_name="unknown", trigger_flag=None):
         # Get buffer dimensions
         csbi = _CONSOLE_SCREEN_BUFFER_INFO()
         if not kernel32.GetConsoleScreenBufferInfo(handle, ctypes.byref(csbi)):
-            return _is_active[0]
+            return _is_active[0], ""
 
         rect = csbi.srWindow
         width = rect.Right - rect.Left + 1
         height = rect.Bottom - rect.Top + 1
         if width <= 0 or height <= 0:
-            return _is_active[0]
+            return _is_active[0], ""
 
         # Read visible window
         buffer_size = _COORD(width, height)
@@ -223,13 +223,60 @@ def get_activity_checker(pid_holder, agent_name="unknown", trigger_flag=None):
             ctypes.byref(read_rect),
         )
         if not ok:
-            return _is_active[0]
+            return _is_active[0], ""
 
         # Extract visible characters only (skip attributes)
         raw = bytes(char_info_array)
         shorts = _array.array("H")
         shorts.frombytes(raw)
         char_data = shorts[::2].tobytes()
+        
+        # Build readable screen text (preserving lines and filtering UI)
+        try:
+            full_text = char_data.decode("utf-16-le", errors="replace")
+            lines = []
+            for y in range(height):
+                line = full_text[y * width : (y + 1) * width].rstrip()
+                if not line:
+                    continue
+                
+                # Filter out CLI UI elements (headers, status bars, quotas, ASCII art)
+                line_trimmed = line.strip()
+                if not line_trimmed:
+                    continue
+                line_lower = line_trimmed.lower()
+                
+                # 1. Box-drawing and Decorative Pattern Check
+                # If a line is mostly (60%+) box characters or dividers, it's UI.
+                ui_chars = "─━═─ ▄▀█▌▐░▒▓▖▗▘▙▚▛▜▝▞▟╭╯╰╮│┌┐└┘├┤┬┴┼"
+                symbol_count = sum(1 for c in line_trimmed if c in ui_chars)
+                is_mostly_symbols = (symbol_count / len(line_trimmed)) > 0.6 if line_trimmed else False
+                
+                # 2. Specific AI CLI Patterns (Gemini, Claude, etc.)
+                is_ui = (
+                    is_mostly_symbols or
+                    ("gemini cli" in line_lower) or
+                    ("signed in as" in line_lower) or
+                    ("signed in with google" in line_lower) or
+                    ("plan:" in line_lower and ("google" in line_lower or "claude" in line_lower)) or
+                    ("mcp issues" in line_lower) or
+                    ("update available" in line_lower and "/extensions" in line_lower) or
+                    ("shortcuts" in line_lower and "?" in line_lower) or
+                    ("shift+tab" in line_lower and "accept" in line_lower) or
+                    ("gemini.md files" in line_lower) or
+                    ("type your message" in line_lower) or
+                    ("ctrl+c" in line_lower and "quit" in line_lower) or
+                    ("workspace" in line_lower and ("branch" in line_lower or "model" in line_lower)) or
+                    ("branch" in line_lower and "sandbox" in line_lower) or
+                    ("quota" in line_lower and "used" in line_lower) or
+                    (line_trimmed.startswith("(") and line_trimmed.endswith(")"))
+                )
+                
+                if not is_ui:
+                    lines.append(line)
+            screen_content = "\n".join(lines).strip()
+        except Exception:
+            screen_content = ""
 
         # Count how many characters actually changed
         prev = last_chars[0]
@@ -252,7 +299,7 @@ def get_activity_checker(pid_holder, agent_name="unknown", trigger_flag=None):
             if _consecutive_idle[0] >= IDLE_COOLDOWN:
                 _is_active[0] = False
 
-        return _is_active[0]
+        return _is_active[0], screen_content
 
     return check
 

@@ -29,8 +29,9 @@ agents = None         # set by run.py — AgentManager instance
 _presence: dict[str, float] = {}
 _activity: dict[str, bool] = {}   # True = screen changed on last poll
 _activity_ts: dict[str, float] = {}  # timestamp of last active=True heartbeat
+_thoughts: dict[str, str] = {}    # agent_name -> latest screen buffer/logs
 ACTIVITY_TIMEOUT = 8  # auto-expire activity after 8s without a fresh active=True
-_presence_lock = threading.Lock()   # guards both _presence and _activity
+_presence_lock = threading.Lock()   # guards _presence, _activity, and _thoughts
 _renamed_from: set[str] = set()    # old names from renames — suppress leave messages
 _cursors: dict[str, dict[str, int]] = {}  # agent_name → {channel_name → last_id}
 _cursors_lock = threading.Lock()

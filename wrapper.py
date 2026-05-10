@@ -823,37 +823,40 @@ def main():
 
     def _activity_monitor():
         last_active = None
+        last_screen = None
         last_report_time = 0
-        REPORT_INTERVAL = 3  # re-send state every 3s while active (keeps server lease fresh)
+        REPORT_INTERVAL = 2  # re-send state every 2s while active (keeps server lease fresh)
         while True:
             time.sleep(1)
             if not _activity_checker:
                 continue
             try:
-                active = _activity_checker()
+                active, screen = _activity_checker()
                 now = time.time()
-                # Send on state change, periodically while active (refresh lease),
-                # or periodically while idle (keep presence alive)
-                IDLE_REPORT_INTERVAL = 8  # keep-alive while idle
+                # Send on state change, screen change, or periodic refresh
                 should_send = (
                     active != last_active
+                    or screen != last_screen
                     or (active and now - last_report_time >= REPORT_INTERVAL)
-                    or (not active and now - last_report_time >= IDLE_REPORT_INTERVAL)
+                    or (not active and now - last_report_time >= 8)
                 )
                 if should_send:
                     current_name, _ = get_identity()
                     current_token = get_token()
                     url = f"http://127.0.0.1:{server_port}/api/heartbeat/{current_name}"
-                    body = json.dumps({"active": active}).encode()
+                    body_dict = {"active": active}
+                    if screen != last_screen:
+                        body_dict["screen"] = screen
+                    body = json.dumps(body_dict).encode()
                     req = urllib.request.Request(
                         url,
                         method="POST",
                         data=body,
                         headers=_auth_headers(current_token, include_json=True),
                     )
-                    resp = urllib.request.urlopen(req, timeout=5)
-                    resp_code = resp.getcode()
+                    urllib.request.urlopen(req, timeout=5)
                     last_active = active
+                    last_screen = screen
                     last_report_time = now
             except Exception:
                 pass

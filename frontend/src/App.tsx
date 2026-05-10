@@ -7,9 +7,10 @@ import { useStore } from './store/useStore';
 import { Hash, Zap, StopCircle, ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { applyThemeToDOM, setupSystemThemeListener } from './utils/theme';
+import { AgentDetailDialog } from './components/AgentDetailDialog';
 
 function App() {
-  const { currentChannel, sessions, settings } = useStore();
+  const { currentChannel, sessions, settings, pinnedAgents, togglePinAgent } = useStore();
   const { sendMessage } = useWebSocket();
   const { t } = useTranslation();
 
@@ -48,7 +49,7 @@ function App() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-brand-bg text-on-surface overflow-hidden font-sans selection:bg-primary/30">
+    <div className="flex h-screen w-full bg-brand-bg text-on-surface overflow-hidden font-sans selection:bg-primary/30 relative">
       <Sidebar />
       
       <main className="flex-1 flex flex-col min-w-0 bg-brand-bg relative shadow-[inset_24px_0_40px_-20px_rgba(0,0,0,0.3)] transition-all duration-700">
@@ -112,6 +113,16 @@ function App() {
             <MessageInput onSendMessage={handleSendMessage} />
         </div>
       </main>
+
+      {/* Floating Agent Windows */}
+      {pinnedAgents.map(id => (
+        <AgentDetailDialog 
+          key={id}
+          agentId={id}
+          mode="floating"
+          onClose={() => togglePinAgent(id)}
+        />
+      ))}
     </div>
   );
 }

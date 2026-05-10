@@ -1,5 +1,5 @@
 import { useStore } from '../store/useStore';
-import { Hash, Settings, Briefcase, Shield, ChevronRight, Zap, Plus, Archive, Layers, Folder, Terminal, Trash2 } from 'lucide-react';
+import { Hash, Settings, Briefcase, Shield, ChevronRight, Zap, Plus, Archive, Folder, Terminal, Trash2, Pin } from 'lucide-react';
 import { useState } from 'react';
 import { JobsPanel } from './JobsPanel';
 import { RulesPanel } from './RulesPanel';
@@ -8,6 +8,7 @@ import { SessionsPanel } from './SessionsPanel';
 import { ArchiveDialog } from './ArchiveDialog';
 import { AddWorkspaceDialog } from './AddWorkspaceDialog';
 import { LaunchAgentDialog } from './LaunchAgentDialog';
+import { AgentDetailDialog } from './AgentDetailDialog';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -18,7 +19,7 @@ function cn(...inputs: any[]) {
 }
 
 export const Sidebar = () => {
-  const { channels, currentChannel, setCurrentChannel, agents, settings, status, workspaces, activeWorkspace } = useStore();
+  const { channels, currentChannel, setCurrentChannel, agents, settings, status, workspaces, activeWorkspace, pinnedAgents } = useStore();
   const { sendAction } = useWebSocket();
   const { t } = useTranslation();
   const [isJobsOpen, setIsJobsOpen] = useState(false);
@@ -28,15 +29,9 @@ export const Sidebar = () => {
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [isAddWorkspaceOpen, setIsAddWorkspaceOpen] = useState(false);
   const [isLaunchAgentOpen, setIsLaunchAgentOpen] = useState(false);
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
 
   const displayUsername = settings.username || 'BEN-ADMIN';
-
-  const handleRenameAgent = (id: string, currentLabel: string) => {
-    const newLabel = window.prompt(t('sidebar.rename_agent', { id }), currentLabel);
-    if (newLabel !== null && newLabel.trim() !== currentLabel) {
-      sendAction({ type: 'rename_agent', name: id, label: newLabel.trim() });
-    }
-  };
 
   const handleArchiveChannel = (name: string) => {
       if (confirm(t('sidebar.archive_channel_confirm', { name }))) {
@@ -77,12 +72,7 @@ export const Sidebar = () => {
     <>
       <aside className="w-[280px] bg-brand-panel border-r border-brand-border flex flex-col shrink-0 h-full overflow-hidden shadow-xl z-20">
         <div className="px-8 py-10 group cursor-default">
-            <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary group-hover:rotate-12 transition-transform duration-500">
-                    <Layers size={18} />
-                </div>
-                <h1 className="font-black text-on-surface text-2xl tracking-tighter leading-none">AgentChattrFlow</h1>
-            </div>
+            <h1 className="font-black text-on-surface text-2xl tracking-tighter leading-none">AgentChattrFlow</h1>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar px-4 space-y-6 pb-4">
@@ -257,20 +247,30 @@ export const Sidebar = () => {
             <div className="space-y-1">
               {Object.entries(agents).map(([id, info]: [string, any]) => {
                 const isThinking = status?.[id]?.busy;
+                const isPinned = pinnedAgents.includes(id);
+                
                 return (
                   <div
                     key={id}
-                    onClick={() => handleRenameAgent(id, info.label || id)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface-variant group cursor-pointer hover:bg-surface-low rounded-xl transition-all active:scale-[0.98]"
-                    title={t('common.rename')}
+                    onClick={() => setSelectedAgentId(id)}
+                    className={cn(
+                        "flex items-center gap-3 px-4 py-2.5 text-sm group cursor-pointer hover:bg-surface-low rounded-xl transition-all active:scale-[0.98]",
+                        isPinned ? "text-primary font-bold bg-primary/5" : "text-on-surface-variant"
+                    )}
+                    title={info.label || id}
                   >
                     <div className="relative">
                       <div 
                           className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(76,175,80,0.3)] group-hover:scale-125 transition-transform" 
                           style={{ backgroundColor: info.color }}
                       />
+                      {isPinned && (
+                        <div className="absolute -top-1.5 -right-1.5">
+                          <Pin size={10} className="text-primary fill-primary" />
+                        </div>
+                      )}
                     </div>
-                    <span className="font-semibold group-hover:text-on-surface truncate">{info.label || id}</span>
+                    <span className="truncate">{info.label || id}</span>
                     {isThinking && (
                         <div className="ml-auto flex items-center gap-2">
                             <span className="text-[9px] font-black text-primary uppercase tracking-tighter animate-pulse">{t('messages.thinking')}</span>
@@ -311,6 +311,14 @@ export const Sidebar = () => {
       <ArchiveDialog isOpen={isArchiveOpen} onClose={() => setIsArchiveOpen(false)} />
       <AddWorkspaceDialog isOpen={isAddWorkspaceOpen} onClose={() => setIsAddWorkspaceOpen(false)} />
       <LaunchAgentDialog isOpen={isLaunchAgentOpen} onClose={() => setIsLaunchAgentOpen(false)} />
+      
+      {selectedAgentId && (
+        <AgentDetailDialog 
+          agentId={selectedAgentId} 
+          mode="modal" 
+          onClose={() => setSelectedAgentId(null)} 
+        />
+      )}
     </>
   );
 };

@@ -2276,6 +2276,10 @@ async def heartbeat(agent_name: str, request: Request):
             was_active = mcp_bridge._activity.get(current_name, False)
             mcp_bridge.set_active(current_name, active_val)
             _activity_changed = was_active != active_val
+        if "screen" in body:
+            with mcp_bridge._presence_lock:
+                mcp_bridge._thoughts[current_name] = str(body["screen"])
+            _activity_changed = True # Force broadcast if screen content arrives
     except Exception:
         pass  # No body = plain heartbeat
     # Immediately broadcast on activity state change (don't wait for background checker)
