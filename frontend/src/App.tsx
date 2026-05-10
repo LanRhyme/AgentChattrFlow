@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { MessageList } from './components/MessageList';
 import { MessageInput } from './components/MessageInput';
@@ -7,9 +8,40 @@ import { Hash, Zap, StopCircle, ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 function App() {
-  const { currentChannel, sessions } = useStore();
+  const { currentChannel, sessions, settings } = useStore();
   const { sendMessage } = useWebSocket();
   const { t } = useTranslation();
+
+  // Apply Theme
+  useEffect(() => {
+      const theme = settings.theme || 'dark';
+      const themeColor = settings.theme_color || 'green';
+      const paletteStyle = settings.palette_style || 'tonal_spot';
+      const root = document.documentElement;
+      
+      const apply = (val: string) => {
+          if (val === 'light') {
+              root.classList.add('light');
+          } else if (val === 'dark') {
+              root.classList.remove('light');
+          } else {
+              const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+              if (isDark) root.classList.remove('light');
+              else root.classList.add('light');
+          }
+          root.setAttribute('data-theme-color', themeColor);
+          root.setAttribute('data-palette-style', paletteStyle);
+      };
+
+      apply(theme);
+
+      if (theme === 'system') {
+          const media = window.matchMedia('(prefers-color-scheme: dark)');
+          const listener = () => apply('system');
+          media.addEventListener('change', listener);
+          return () => media.removeEventListener('change', listener);
+      }
+  }, [settings.theme, settings.theme_color, settings.palette_style]);
 
   const handleSendMessage = (text: string, attachments?: any[], replyTo?: number) => {
     sendMessage(text, currentChannel, attachments, replyTo);
@@ -31,41 +63,41 @@ function App() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-brand-bg text-on-surface overflow-hidden font-sans selection:bg-primary-500/30">
+    <div className="flex h-screen w-full bg-brand-bg text-on-surface overflow-hidden font-sans selection:bg-primary/30">
       <Sidebar />
       
       <main className="flex-1 flex flex-col min-w-0 bg-brand-bg relative shadow-[inset_24px_0_40px_-20px_rgba(0,0,0,0.3)] transition-all duration-700">
         {/* M3 Style Top Bar */}
         <header className="h-16 border-b border-brand-border/30 flex items-center justify-between px-8 bg-brand-bg/60 backdrop-blur-2xl z-20 shrink-0">
           <div className="flex items-center gap-4 group cursor-default">
-            <div className="w-10 h-10 rounded-2xl bg-surface-high flex items-center justify-center border border-brand-border/50 shadow-sm group-hover:border-primary-500/50 transition-all duration-500">
-                <Hash size={20} className="text-primary-500 group-hover:scale-110 transition-transform" />
+            <div className="w-10 h-10 rounded-2xl bg-surface-high flex items-center justify-center border border-brand-border/50 shadow-sm group-hover:border-primary/50 transition-all duration-500">
+                <Hash size={20} className="text-primary group-hover:scale-110 transition-transform" />
             </div>
             <div>
                 <h2 className="font-bold text-on-surface text-lg leading-none tracking-tight">{currentChannel}</h2>
-                <p className="text-[10px] text-primary-400 font-black uppercase tracking-[0.2em] mt-1.5 opacity-80 group-hover:opacity-100 transition-opacity">{t('common.neural_node')}</p>
+                <p className="text-[10px] text-primary font-black uppercase tracking-[0.2em] mt-1.5 opacity-80 group-hover:opacity-100 transition-opacity">{t('common.neural_node')}</p>
             </div>
           </div>
         </header>
 
         {/* Active Session Info Bar */}
         {activeSession && (
-            <div className="bg-primary-500/10 border-b border-primary-500/20 px-8 py-3 flex items-center justify-between animate-in slide-in-from-top-full duration-500 z-10">
+            <div className="bg-primary/10 border-b border-primary/20 px-8 py-3 flex items-center justify-between animate-in slide-in-from-top-full duration-500 z-10">
                 <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-primary-500/20 flex items-center justify-center text-primary-500 shrink-0 animate-pulse">
+                    <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary shrink-0 animate-pulse">
                         <Zap size={16} fill="currentColor" />
                     </div>
                     <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                            <span className="text-xs font-black uppercase tracking-widest text-white truncate">{activeSession.template_name}</span>
-                            <span className="text-[10px] font-bold text-primary-400 bg-primary-500/10 px-1.5 py-0.5 rounded uppercase tracking-tighter">
+                            <span className="text-xs font-black uppercase tracking-widest text-on-surface truncate">{activeSession.template_name}</span>
+                            <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded uppercase tracking-tighter">
                                 {t('app.phase')} {activeSession.current_phase + 1}/{activeSession.total_phases}
                             </span>
                         </div>
-                        <p className="text-[11px] text-gray-400 truncate mt-0.5 italic flex items-center gap-1.5">
+                        <p className="text-[11px] text-on-surface-variant/50 truncate mt-0.5 italic flex items-center gap-1.5">
                             <ArrowRight size={10} /> {activeSession.phase_name}
                             {activeSession.waiting_on && (
-                                <span className="ml-2 not-italic font-black text-primary-500/80 uppercase tracking-tighter">
+                                <span className="ml-2 not-italic font-black text-primary/80 uppercase tracking-tighter">
                                     • {t('app.awaiting')} {activeSession.waiting_on}
                                 </span>
                             )}

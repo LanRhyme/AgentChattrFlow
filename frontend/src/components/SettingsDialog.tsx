@@ -1,6 +1,6 @@
-import { Fragment } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { X, User, RefreshCw, Smartphone, Monitor, Volume2, Globe, Terminal } from 'lucide-react';
+import { X, User, RefreshCw, Smartphone, Monitor, Volume2, Globe, Terminal, Moon, Laptop, Check } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +11,21 @@ export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
   const { settings, soundPrefs, setSoundPrefs, agents } = useStore();
   const { sendAction } = useWebSocket();
   const { t, i18n } = useTranslation();
+  const [activeSection, setActiveSection] = useState(0);
+
+  // Local state for snappy UI feedback
+  const [localTheme, setLocalTheme] = useState(settings.theme || 'dark');
+  const [localColor, setLocalColor] = useState(settings.theme_color || 'green');
+  const [localStyle, setLocalStyle] = useState(settings.palette_style || 'tonal_spot');
+
+  // Sync local state with store when dialog opens or settings change
+  useEffect(() => {
+      if (isOpen) {
+          setLocalTheme(settings.theme || 'dark');
+          setLocalColor(settings.theme_color || 'green');
+          setLocalStyle(settings.palette_style || 'tonal_spot');
+      }
+  }, [isOpen, settings.theme, settings.theme_color, settings.palette_style]);
 
   const handleSave = (key: string, value: any) => {
     sendAction({ type: 'update_settings', data: { [key]: value } });
@@ -27,6 +42,42 @@ export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
       }
   };
 
+  const applyTheme = (theme: string) => {
+      setLocalTheme(theme);
+      const root = document.documentElement;
+      root.classList.remove('light');
+      handleSave('theme', theme);
+  };
+
+  const applyColor = (color: string) => {
+      setLocalColor(color);
+      const root = document.documentElement;
+      root.setAttribute('data-theme-color', color);
+      // Re-apply palette style to ensure CSS variables update correctly
+      root.setAttribute('data-palette-style', localStyle);
+      handleSave('theme_color', color);
+  };
+
+  const applyPaletteStyle = (style: string) => {
+      setLocalStyle(style);
+      document.documentElement.setAttribute('data-palette-style', style);
+      handleSave('palette_style', style);
+  };
+
+  const THEME_COLORS = [
+      { id: 'green', label: 'Green', color: '#4caf50' },
+      { id: 'blue', label: 'Blue', color: '#2196f3' },
+      { id: 'purple', label: 'Purple', color: '#9c27b0' },
+      { id: 'rose', label: 'Rose', color: '#f43f5e' },
+  ];
+
+  const PALETTE_STYLES = [
+      { id: 'tonal_spot', label: t('settings.palette_styles.tonal_spot') },
+      { id: 'vibrant', label: t('settings.palette_styles.vibrant') },
+      { id: 'expressive', label: t('settings.palette_styles.expressive') },
+      { id: 'neutral', label: t('settings.palette_styles.neutral') },
+  ];
+
   const SOUND_OPTIONS = [
       { id: 'none', name: 'Silent' },
       { id: 'soft-chime', name: 'Soft Chime' },
@@ -40,17 +91,122 @@ export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
 
   const sections = [
     {
+      id: 'appearance',
+      title: t('settings.appearance'),
+      icon: Monitor,
+      fields: (
+        <div className="space-y-8">
+            <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant px-1">{t('settings.brightness_mode')}</label>
+                <div className="grid grid-cols-2 gap-3">
+                    {[
+                        { id: 'dark', label: t('settings.theme_modes.dark'), icon: Moon },
+                        { id: 'system', label: t('settings.theme_modes.system'), icon: Laptop },
+                    ].map((mode) => {
+                        const isSelected = localTheme === mode.id;
+                        return (
+                            <button
+                                key={mode.id}
+                                onClick={() => applyTheme(mode.id)}
+                                className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all relative ${
+                                    isSelected 
+                                    ? 'bg-primary/10 border-primary ring-1 ring-primary shadow-lg shadow-primary/10' 
+                                    : 'bg-on-surface/[0.03] border-brand-border text-on-surface-variant hover:bg-on-surface/[0.05]'
+                                }`}
+                            >
+                                {isSelected && <div className="absolute top-2 right-2 animate-in zoom-in-50 duration-300"><Check size={12} className="text-primary" /></div>}
+                                <mode.icon size={20} className={isSelected ? 'text-primary' : ''} />
+                                <span className={`text-[10px] font-bold uppercase tracking-wider ${isSelected ? 'text-primary' : ''}`}>{mode.label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant px-1">{t('settings.primary_color')}</label>
+                <div className="grid grid-cols-4 gap-3">
+                    {THEME_COLORS.map((color) => {
+                        const isSelected = localColor === color.id;
+                        return (
+                            <button
+                                key={color.id}
+                                onClick={() => applyColor(color.id)}
+                                className={`flex items-center gap-3 p-3 rounded-2xl border transition-all relative ${
+                                    isSelected 
+                                    ? 'bg-primary/10 border-primary ring-1 ring-primary shadow-lg shadow-primary/10' 
+                                    : 'bg-on-surface/[0.03] border-brand-border text-on-surface-variant hover:bg-on-surface/[0.05]'
+                                }`}
+                            >
+                                {isSelected && <div className="absolute top-1 right-1 animate-in zoom-in-50 duration-300"><Check size={10} className="text-primary" /></div>}
+                                <div className="w-5 h-5 rounded-full shadow-lg shrink-0" style={{ backgroundColor: color.color }} />
+                                <span className={`text-[11px] font-bold ${isSelected ? 'text-primary' : ''}`}>{color.label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant px-1">{t('settings.palette_style')}</label>
+                <div className="grid grid-cols-2 gap-3">
+                    {PALETTE_STYLES.map((style) => {
+                        const isSelected = localStyle === style.id;
+                        return (
+                            <button
+                                key={style.id}
+                                onClick={() => applyPaletteStyle(style.id)}
+                                className={`flex items-center justify-center p-3 rounded-2xl border transition-all relative ${
+                                    isSelected 
+                                    ? 'bg-primary/10 border-primary ring-1 ring-primary shadow-lg shadow-primary/10' 
+                                    : 'bg-on-surface/[0.03] border-brand-border text-on-surface-variant hover:bg-on-surface/[0.05]'
+                                }`}
+                            >
+                                {isSelected && <div className="absolute top-2 right-2 animate-in zoom-in-50 duration-300"><Check size={12} className="text-primary" /></div>}
+                                <span className={`text-[11px] font-bold ${isSelected ? 'text-primary' : ''}`}>{style.label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <Dropdown 
+                    label={t('settings.typography')}
+                    value={settings.font || 'sans'}
+                    onChange={(val) => handleSave('font', val)}
+                    options={[
+                        { id: 'sans', name: t('settings.fonts.sans') },
+                        { id: 'mono', name: t('settings.fonts.mono') },
+                        { id: 'serif', name: t('settings.fonts.serif') }
+                    ]}
+                />
+                <Dropdown 
+                    label={t('settings.visual_depth')}
+                    value={settings.contrast || 'normal'}
+                    onChange={(val) => handleSave('contrast', val)}
+                    options={[
+                        { id: 'normal', name: t('settings.contrast.normal') },
+                        { id: 'high', name: t('settings.contrast.high') }
+                    ]}
+                />
+            </div>
+        </div>
+      )
+    },
+    {
+      id: 'identity',
       title: t('settings.identity'),
       icon: User,
       fields: (
         <div className="space-y-4">
             <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1">{t('settings.user_identifier')}</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant px-1">{t('settings.user_identifier')}</label>
                 <input
                     type="text"
                     value={settings.username || ''}
                     onChange={(e) => handleSave('username', e.target.value)}
-                    className="w-full bg-white/[0.03] border border-brand-border rounded-[20px] px-5 py-4 text-sm text-gray-100 focus:border-primary-500/50 focus:bg-white/[0.05] outline-none transition-all shadow-inner"
+                    className="w-full bg-on-surface/[0.03] border border-brand-border rounded-[20px] px-5 py-3 text-sm text-on-surface focus:border-primary/50 focus:bg-on-surface/[0.05] outline-none transition-all shadow-inner"
                     placeholder="BEN-ADMIN..."
                 />
             </div>
@@ -58,11 +214,13 @@ export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
       )
     },
     {
+        id: 'api',
         title: 'API Intelligence',
         icon: Terminal,
         fields: <ApiAgentManager />
     },
     {
+        id: 'localization',
         title: t('settings.localization'),
         icon: Globe,
         fields: (
@@ -76,12 +234,13 @@ export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
                 ]}
             />
         )
-      },
+    },
     {
+      id: 'acoustics',
       title: t('settings.acoustics'),
       icon: Volume2,
       fields: (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-4 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
             <Dropdown 
                 label={t('settings.default_notification')}
                 value={soundPrefs['default'] || 'soft-chime'}
@@ -111,37 +270,11 @@ export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
       )
     },
     {
-      title: t('settings.interface'),
-      icon: Monitor,
-      fields: (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Dropdown 
-                label={t('settings.typography')}
-                value={settings.font || 'sans'}
-                onChange={(val) => handleSave('font', val)}
-                options={[
-                    { id: 'sans', name: t('settings.fonts.sans') },
-                    { id: 'mono', name: t('settings.fonts.mono') },
-                    { id: 'serif', name: t('settings.fonts.serif') }
-                ]}
-            />
-            <Dropdown 
-                label={t('settings.visual_depth')}
-                value={settings.contrast || 'normal'}
-                onChange={(val) => handleSave('contrast', val)}
-                options={[
-                    { id: 'normal', name: t('settings.contrast.normal') },
-                    { id: 'high', name: t('settings.contrast.high') }
-                ]}
-            />
-        </div>
-      )
-    },
-    {
+        id: 'network',
         title: t('settings.network'),
         icon: RefreshCw,
         fields: (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-4">
               <Dropdown 
                   label={t('settings.history_depth')}
                   value={String(settings.history_limit || 'all')}
@@ -179,64 +312,78 @@ export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-brand-bg/90 backdrop-blur-xl transition-opacity" />
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity" />
         </Transition.Child>
 
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-500"
-            enterFrom="opacity-0 scale-95 translate-y-8"
+            enterFrom="opacity-0 scale-95 translate-y-4"
             enterTo="opacity-100 scale-100 translate-y-0"
             leave="ease-in duration-300"
             leaveFrom="opacity-100 scale-100 translate-y-0"
-            leaveTo="opacity-0 scale-95 translate-y-8"
+            leaveTo="opacity-0 scale-95 translate-y-4"
           >
-            <Dialog.Panel className="w-full max-w-3xl transform overflow-hidden rounded-[40px] bg-brand-panel p-10 text-left align-middle shadow-[0_32px_80px_-16px_rgba(0,0,0,0.6)] transition-all border border-brand-border ring-1 ring-white/5">
-              <div className="flex items-center justify-between mb-12">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-primary-500/10 border border-primary-500/20 flex items-center justify-center text-primary-500 shadow-sm">
-                    <Smartphone size={24} />
-                  </div>
-                  <div>
-                      <Dialog.Title as="h3" className="text-2xl font-black text-white tracking-tight leading-none">
-                        {t('common.system_preferences')}
-                      </Dialog.Title>
-                      <p className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.3em] mt-2">{t('common.global_configuration')}</p>
-                  </div>
+            <Dialog.Panel className="w-full max-w-4xl h-[600px] flex transform overflow-hidden rounded-[32px] bg-brand-panel text-left align-middle shadow-2xl transition-all border border-brand-border ring-1 ring-white/5">
+              {/* Sidebar */}
+              <div className="w-64 border-r border-brand-border bg-brand-bg/50 flex flex-col shrink-0">
+                <div className="p-8 pb-4">
+                    <h3 className="text-xl font-black text-on-surface tracking-tight leading-none flex items-center gap-2">
+                      <Smartphone size={20} className="text-primary" />
+                      {t('common.system_preferences')}
+                    </h3>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="rounded-full p-3 text-gray-500 hover:bg-white/5 hover:text-white transition-all border border-brand-border"
-                >
-                  <X size={24} />
-                </button>
+                <nav className="flex-1 px-4 space-y-1 mt-4">
+                    {sections.map((section, idx) => (
+                        <button
+                            key={section.id}
+                            onClick={() => setActiveSection(idx)}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all group ${
+                                activeSection === idx 
+                                ? 'bg-primary/10 text-primary' 
+                                : 'text-on-surface-variant hover:bg-on-surface/5 hover:text-on-surface'
+                            }`}
+                        >
+                            <section.icon size={18} className={activeSection === idx ? 'text-primary' : 'text-on-surface-variant group-hover:text-on-surface'} />
+                            <span className="text-[13px] font-bold">{section.title}</span>
+                        </button>
+                    ))}
+                </nav>
+                <div className="p-6">
+                    <button
+                      onClick={onClose}
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-on-surface/[0.03] hover:bg-on-surface/[0.08] text-on-surface-variant hover:text-on-surface border border-brand-border rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all"
+                    >
+                        <X size={14} /> {t('common.close')}
+                    </button>
+                </div>
               </div>
 
-              <div className="space-y-12 max-h-[65vh] overflow-y-auto pr-6 custom-scrollbar pb-10">
-                {sections.map((section, idx) => (
-                    <div key={idx} className="animate-in fade-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: `${idx * 100}ms` }}>
-                         <div className="flex items-center gap-3 mb-6">
-                            <section.icon size={16} className="text-primary-500/70" />
-                            <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-gray-400">{section.title}</h4>
-                            <div className="flex-1 h-px bg-white/5" />
+              {/* Content */}
+              <div className="flex-1 flex flex-col min-w-0 bg-brand-panel">
+                <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
+                    <div className="max-w-xl mx-auto animate-in fade-in slide-in-from-right-4 duration-500" key={activeSection}>
+                         <div className="flex items-center gap-3 mb-8">
+                            <h4 className="text-sm font-black uppercase tracking-[0.3em] text-on-surface-variant">{sections[activeSection].title}</h4>
+                            <div className="flex-1 h-px bg-brand-border" />
                          </div>
-                         {section.fields}
+                         {sections[activeSection].fields}
                     </div>
-                ))}
-              </div>
+                </div>
 
-              <div className="mt-8 flex gap-4 pt-8 border-t border-white/5">
-                <button className="flex-1 py-4 bg-white/[0.03] hover:bg-white/[0.08] text-gray-300 border border-brand-border rounded-[24px] text-xs font-black uppercase tracking-widest transition-all">
-                    {t('settings.data_archive')}
-                </button>
-                <button
-                  type="button"
-                  className="flex-[2] inline-flex justify-center rounded-[24px] border border-transparent bg-primary-500 px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-brand-bg hover:bg-primary-400 transition-all shadow-[0_12px_32px_-4px_rgba(76,175,80,0.4)]"
-                  onClick={onClose}
-                >
-                  {t('settings.confirm_sequence')}
-                </button>
+                <div className="p-8 border-t border-brand-border flex gap-4 bg-brand-bg/20">
+                    <button className="px-6 py-3 bg-on-surface/[0.03] hover:bg-on-surface/[0.08] text-on-surface-variant border border-brand-border rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">
+                        {t('settings.data_archive')}
+                    </button>
+                    <button
+                      type="button"
+                      className="flex-1 inline-flex justify-center rounded-2xl border border-transparent bg-primary px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-brand-bg hover:opacity-90 transition-all shadow-lg"
+                      onClick={onClose}
+                    >
+                      {t('settings.confirm_sequence')}
+                    </button>
+                </div>
               </div>
             </Dialog.Panel>
           </Transition.Child>

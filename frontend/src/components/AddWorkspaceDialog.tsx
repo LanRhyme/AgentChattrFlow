@@ -101,7 +101,7 @@ export const AddWorkspaceDialog = ({ isOpen, onClose }: AddWorkspaceDialogProps)
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-primary-400 uppercase tracking-widest px-1">
+                    <label className="text-xs font-bold text-primary uppercase tracking-widest px-1">
                       {t('common.workspace_name')}
                     </label>
                     <input
@@ -109,13 +109,13 @@ export const AddWorkspaceDialog = ({ isOpen, onClose }: AddWorkspaceDialogProps)
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. My Project"
-                      className="w-full bg-surface-low border border-brand-border rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-primary-500/50 transition-colors"
+                      className="w-full bg-surface-low border border-brand-border rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-colors"
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-primary-400 uppercase tracking-widest px-1">
+                    <label className="text-xs font-bold text-primary uppercase tracking-widest px-1">
                       {t('common.workspace_path')}
                     </label>
                     <div className="flex gap-2">
@@ -124,14 +124,14 @@ export const AddWorkspaceDialog = ({ isOpen, onClose }: AddWorkspaceDialogProps)
                         value={path}
                         onChange={(e) => setPath(e.target.value)}
                         placeholder={t('common.workspace_path_placeholder')}
-                        className="flex-1 bg-surface-low border border-brand-border rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-primary-500/50 transition-colors"
+                        className="flex-1 bg-surface-low border border-brand-border rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-colors"
                         required
                       />
                       <button
                         type="button"
                         onClick={handlePickDirectory}
                         disabled={isPicking}
-                        className="px-4 bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 rounded-2xl border border-primary-500/20 transition-all flex items-center justify-center min-w-[100px]"
+                        className="px-4 bg-primary/10 hover:bg-primary/20 text-primary rounded-2xl border border-primary/20 transition-all flex items-center justify-center min-w-[100px]"
                         title={t('common.trust_directory')}
                       >
                         {isPicking ? (
@@ -154,7 +154,7 @@ export const AddWorkspaceDialog = ({ isOpen, onClose }: AddWorkspaceDialogProps)
                     <button
                       type="submit"
                       disabled={isSubmitting || !name || !path}
-                      className="flex-1 px-6 py-3.5 rounded-2xl bg-primary-500 text-white font-bold text-sm hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/20 disabled:opacity-50 disabled:shadow-none"
+                      className="flex-1 px-6 py-3.5 rounded-2xl bg-primary text-brand-bg font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none"
                     >
                       {isSubmitting ? <Loader2 size={18} className="animate-spin mx-auto" /> : t('common.confirm')}
                     </button>

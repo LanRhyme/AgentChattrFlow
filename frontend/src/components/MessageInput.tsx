@@ -257,8 +257,8 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
                           className={cn(
                               "px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all border flex items-center gap-1.5",
                               isActive 
-                                  ? "bg-primary-500/20 text-primary-400 border-primary-500/30" 
-                                  : "bg-surface-high text-gray-500 hover:text-white border-brand-border hover:bg-white/5"
+                                  ? "bg-primary/20 text-primary border-primary/30" 
+                                  : "bg-surface-high text-on-surface-variant/50 hover:text-on-surface border-brand-border hover:bg-on-surface/5"
                           )}
                       >
                           <div className="w-1.5 h-1.5 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.5)]" style={{ backgroundColor: info.color, boxShadow: isActive ? `0 0 8px ${info.color}` : 'none' }} />
@@ -272,8 +272,8 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
       {/* Autocomplete Popover */}
       {suggestionType && currentSuggestions.length > 0 && (
           <div className="absolute bottom-full left-0 mb-4 w-80 bg-brand-panel border border-brand-border rounded-[24px] shadow-[0_16px_40px_-12px_rgba(0,0,0,0.8)] overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 z-50 ring-1 ring-white/5">
-              <div className="px-4 py-3 border-b border-white/[0.04] bg-white/[0.01]">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-500">
+              <div className="px-4 py-3 border-b border-brand-border/30 bg-surface-low/30">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant">
                       {suggestionType === 'agent' ? t('input.select_agent') : t('input.system_commands')}
                   </p>
               </div>
@@ -286,26 +286,26 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
                           onMouseEnter={() => setSuggestionIndex(idx)}
                           className={cn(
                               "w-full text-left px-4 py-3 flex items-center gap-3 rounded-[16px] transition-all",
-                              suggestionIndex === idx ? "bg-primary-500/10 border border-primary-500/20" : "hover:bg-white/[0.03] border border-transparent"
+                              suggestionIndex === idx ? "bg-primary/10 border border-primary/20" : "hover:bg-on-surface/[0.03] border border-transparent"
                           )}
                       >
                           {suggestionType === 'agent' ? (
-                              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-black/20 shrink-0" style={{ color: (item as any).color }}>
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-surface-low/50 shrink-0" style={{ color: (item as any).color }}>
                                   <User size={16} />
                               </div>
                           ) : (
-                              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary-500/10 text-primary-500 shrink-0">
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary/10 text-primary shrink-0">
                                   <Terminal size={16} />
                               </div>
                           )}
                           <div className="min-w-0">
                               <p className={cn(
                                   "text-[13px] font-bold tracking-tight truncate transition-colors",
-                                  suggestionIndex === idx ? "text-primary-400" : "text-on-surface"
+                                  suggestionIndex === idx ? "text-primary" : "text-on-surface"
                               )}>
                                   {item.name}
                               </p>
-                              <p className="text-[11px] text-gray-500 truncate mt-0.5">{item.desc}</p>
+                              <p className="text-[11px] text-on-surface-variant/50 truncate mt-0.5">{item.desc}</p>
                           </div>
                       </button>
                   ))}
@@ -316,14 +316,14 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
       {/* Replying To Banner */}
       {replyingTo && (
           <div className="absolute bottom-full left-0 right-0 mb-4 bg-surface-high border border-brand-border rounded-[20px] shadow-lg p-3 px-5 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2">
-              <Reply size={16} className="text-primary-500 shrink-0" />
+              <Reply size={16} className="text-primary shrink-0" />
               <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-black uppercase tracking-widest text-primary-400">{t('common.replying_to', { sender: replyingTo.sender })}</p>
-                  <p className="text-sm text-gray-300 truncate">{replyingTo.text}</p>
+                  <p className="text-[11px] font-black uppercase tracking-widest text-on-surface-variant">{t('common.replying_to', { sender: replyingTo.sender })}</p>
+                  <p className="text-sm text-on-surface truncate">{replyingTo.text}</p>
               </div>
               <button 
                   onClick={() => setReplyingTo(null)}
-                  className="p-2 text-gray-500 hover:text-white hover:bg-white/10 rounded-full transition-all"
+                  className="p-2 text-on-surface-variant hover:text-on-surface hover:bg-on-surface/10 rounded-full transition-all"
               >
                   <X size={16} />
               </button>
@@ -331,12 +331,12 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
       )}
 
       {/* M3 Elevation Shadow & Glow */}
-      <div className="absolute -inset-1 bg-primary-500/10 rounded-[32px] blur-2xl opacity-0 group-focus-within:opacity-100 transition duration-700 pointer-events-none" />
+      <div className="absolute -inset-1 bg-primary/10 rounded-[32px] blur-2xl opacity-0 group-focus-within:opacity-100 transition duration-700 pointer-events-none" />
       
       <div 
         className={cn(
             "relative flex flex-col bg-surface-high border rounded-[28px] overflow-hidden shadow-2xl transition-all",
-            isDragging ? "border-primary-500 bg-primary-500/5 ring-4 ring-primary-500/20" : "border-brand-border group-focus-within:border-primary-500/50 group-focus-within:bg-brand-panel"
+            isDragging ? "border-primary bg-primary/5 ring-4 ring-primary/20" : "border-brand-border group-focus-within:border-primary/50 group-focus-within:bg-brand-panel"
         )}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
@@ -353,18 +353,18 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
         />
 
         {/* Toolbar */}
-        <div className="flex items-center gap-1 px-5 py-2 border-b border-white/[0.03] bg-black/10">
+        <div className="flex items-center gap-1 px-5 py-2 border-b border-brand-border/30 bg-surface-low/30">
             <button 
                 type="button" 
                 onClick={() => fileInputRef.current?.click()}
-                className="p-2 text-on-surface-variant hover:text-primary-400 hover:bg-white/[0.05] rounded-xl transition-all" 
+                className="p-2 text-on-surface-variant hover:text-primary hover:bg-on-surface/5 rounded-xl transition-all" 
                 title={t('common.attach_file')}
             >
                 <Paperclip size={16} />
             </button>
             
             <div className="ml-auto flex items-center gap-3">
-                <span className="text-[9px] text-gray-600 font-black uppercase tracking-[0.2em] flex items-center gap-1.5 opacity-60">
+                <span className="text-[9px] text-on-surface-variant/40 font-black uppercase tracking-[0.2em] flex items-center gap-1.5 opacity-60">
                     <Command size={10} /> {t('common.newline_hint')}
                 </span>
             </div>
@@ -372,14 +372,14 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
 
         {/* Attachments Preview Area */}
         {attachments.length > 0 && (
-            <div className="flex flex-wrap gap-3 p-4 pb-0 border-b border-white/[0.03]">
+            <div className="flex flex-wrap gap-3 p-4 pb-0 border-b border-brand-border/30">
                 {attachments.map((att, idx) => (
                     <div key={idx} className="relative group/att bg-brand-bg rounded-xl border border-brand-border p-2 pr-10 min-w-[120px] max-w-[200px] flex items-center gap-3">
-                        <div className="w-10 h-10 shrink-0 bg-white/5 rounded-lg flex items-center justify-center overflow-hidden">
+                        <div className="w-10 h-10 shrink-0 bg-on-surface/5 rounded-lg flex items-center justify-center overflow-hidden">
                             {att.type?.startsWith('image/') ? (
                                 <img src={att.url} alt={att.name} className="w-full h-full object-cover" />
                             ) : (
-                                <File size={18} className="text-primary-500" />
+                                <File size={18} className="text-primary" />
                             )}
                         </div>
                         <div className="min-w-0 flex-1">
@@ -389,7 +389,7 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
                         <button 
                             type="button" 
                             onClick={() => removeAttachment(idx)}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/50 hover:bg-red-500 text-white rounded-full opacity-0 group-hover/att:opacity-100 transition-all"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-on-surface/10 hover:bg-red-500 text-on-surface-variant hover:text-white rounded-full opacity-0 group-hover/att:opacity-100 transition-all"
                         >
                             <X size={12} />
                         </button>
@@ -401,8 +401,8 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
         {/* Input Row */}
         <form onSubmit={handleSubmit} className="flex gap-4 items-end p-5 relative">
           {isDragging && (
-              <div className="absolute inset-0 bg-primary-500/10 backdrop-blur-sm z-10 flex items-center justify-center">
-                  <div className="bg-primary-500 text-brand-bg px-6 py-2 rounded-full font-black text-xs uppercase tracking-widest shadow-xl flex items-center gap-2">
+              <div className="absolute inset-0 bg-primary/10 backdrop-blur-sm z-10 flex items-center justify-center">
+                  <div className="bg-primary text-brand-bg px-6 py-2 rounded-full font-black text-xs uppercase tracking-widest shadow-xl flex items-center gap-2">
                       <ImageIcon size={16} /> {t('input.drop_to_upload')}
                   </div>
               </div>
@@ -424,7 +424,7 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
           <button
             type="submit"
             disabled={(!text.trim() && attachments.length === 0) || isUploading}
-            className="shrink-0 w-12 h-12 flex items-center justify-center bg-primary-500 hover:bg-primary-400 disabled:opacity-20 disabled:grayscale disabled:hover:bg-primary-500 text-brand-bg rounded-2xl transition-all shadow-lg shadow-primary-900/30 active:scale-90"
+            className="shrink-0 w-12 h-12 flex items-center justify-center bg-primary hover:opacity-90 disabled:opacity-20 disabled:grayscale disabled:hover:bg-primary text-brand-bg rounded-2xl transition-all shadow-lg shadow-primary/30 active:scale-90"
           >
             <Send size={20} strokeWidth={3} />
           </button>

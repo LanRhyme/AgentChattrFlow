@@ -146,6 +146,21 @@
     "data_archive": "Data Archive (Export)",
     "localization": "Localization",
     "interface_language": "Interface Language",
+    "appearance": "Appearance",
+    "brightness_mode": "Brightness Mode",
+    "primary_color": "Primary Color",
+    "palette_style": "Palette Style",
+    "theme_modes": {
+        "dark": "Dark Mode",
+        "system": "System"
+    },
+    "palette_styles": {
+        "tonal_spot": "Tonal Spot",
+        "vibrant": "Vibrant",
+        "expressive": "Expressive",
+        "content": "Content",
+        "neutral": "Neutral"
+    },
     "fonts": {
       "sans": "Modern Sans",
       "mono": "Technical Mono",

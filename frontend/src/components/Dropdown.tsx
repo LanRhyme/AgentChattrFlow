@@ -26,13 +26,13 @@ export const Dropdown = ({ value, onChange, options, placeholder, label }: Dropd
 
   return (
     <div className="space-y-2 w-full">
-      {label && <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1">{label}</label>}
+      {label && <label className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant px-1">{label}</label>}
       <Listbox value={value} onChange={onChange}>
         <div className="relative">
-          <Listbox.Button className="relative w-full cursor-default bg-white/[0.03] border border-brand-border rounded-[20px] py-4 pl-5 pr-12 text-left text-sm text-gray-100 focus:outline-none focus-visible:border-primary-500/50 focus-visible:ring-2 focus-visible:ring-primary-500/20 transition-all shadow-inner">
+          <Listbox.Button className="relative w-full cursor-default bg-on-surface/[0.03] border border-brand-border rounded-[20px] py-3 pl-5 pr-12 text-left text-sm text-on-surface focus:outline-none focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/20 transition-all shadow-inner">
             <span className="block truncate">{selected?.name || placeholder}</span>
             <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
-              <ChevronDown className="h-4 w-4 text-gray-500" aria-hidden="true" />
+              <ChevronDown className="h-4 w-4 text-on-surface-variant" aria-hidden="true" />
             </span>
           </Listbox.Button>
           <Transition
@@ -48,18 +48,18 @@ export const Dropdown = ({ value, onChange, options, placeholder, label }: Dropd
                   className={({ active }) =>
                     cn(
                       'relative cursor-default select-none py-3 pl-10 pr-4 transition-colors mx-2 rounded-xl',
-                      active ? 'bg-primary-500/10 text-primary-400' : 'text-gray-300'
+                      active ? 'bg-primary/10 text-primary' : 'text-on-surface'
                     )
                   }
                   value={option.id}
                 >
                   {({ selected: isSelected }) => (
                     <>
-                      <span className={cn('block truncate', isSelected ? 'font-bold' : 'font-normal')}>
+                      <span className={cn('block truncate text-[13px]', isSelected ? 'font-bold' : 'font-normal')}>
                         {option.name}
                       </span>
                       {isSelected ? (
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-primary-500">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-primary">
                           <Check className="h-4 w-4" aria-hidden="true" />
                         </span>
                       ) : null}

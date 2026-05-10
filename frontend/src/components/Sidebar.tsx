@@ -78,7 +78,7 @@ export const Sidebar = () => {
       <aside className="w-[280px] bg-brand-panel border-r border-brand-border flex flex-col shrink-0 h-full overflow-hidden shadow-xl z-20">
         <div className="px-8 py-10 group cursor-default">
             <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary-500/20 flex items-center justify-center text-primary-500 group-hover:rotate-12 transition-transform duration-500">
+                <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary group-hover:rotate-12 transition-transform duration-500">
                     <Layers size={18} />
                 </div>
                 <h1 className="font-black text-on-surface text-2xl tracking-tighter leading-none">AgentChattrFlow</h1>
@@ -92,30 +92,30 @@ export const Sidebar = () => {
                 className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-high rounded-2xl transition-all group border border-transparent hover:border-brand-border shadow-sm active:scale-[0.98]"
               >
                 <div className="flex items-center gap-3">
-                    <Zap size={18} className="text-primary-400 group-hover:text-primary-300 group-hover:animate-pulse" />
+                    <Zap size={18} className="text-primary group-hover:animate-pulse" />
                     <span className="font-semibold tracking-wide">{t('common.orchestration')}</span>
                 </div>
-                <ChevronRight size={14} className="text-brand-border group-hover:text-primary-400 group-hover:translate-x-0.5 transition-all" />
+                <ChevronRight size={14} className="text-brand-border group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
               </button>
              <button 
                 onClick={() => setIsJobsOpen(true)}
                 className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-high rounded-2xl transition-all group border border-transparent hover:border-brand-border shadow-sm active:scale-[0.98]"
               >
                 <div className="flex items-center gap-3">
-                    <Briefcase size={18} className="text-primary-400 group-hover:text-primary-300" />
+                    <Briefcase size={18} className="text-primary group-hover:opacity-80" />
                     <span className="font-semibold tracking-wide">{t('common.jobs_board')}</span>
                 </div>
-                <ChevronRight size={14} className="text-brand-border group-hover:text-primary-400 group-hover:translate-x-0.5 transition-all" />
+                <ChevronRight size={14} className="text-brand-border group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
               </button>
               <button 
                 onClick={() => setIsRulesOpen(true)}
                 className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-high rounded-2xl transition-all group border border-transparent hover:border-brand-border shadow-sm active:scale-[0.98]"
               >
                 <div className="flex items-center gap-3">
-                    <Shield size={18} className="text-primary-400 group-hover:text-primary-300" />
+                    <Shield size={18} className="text-primary group-hover:opacity-80" />
                     <span className="font-semibold tracking-wide">{t('common.governance')}</span>
                 </div>
-                <ChevronRight size={14} className="text-brand-border group-hover:text-primary-400 group-hover:translate-x-0.5 transition-all" />
+                <ChevronRight size={14} className="text-brand-border group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
               </button>
           </div>
 
@@ -127,7 +127,7 @@ export const Sidebar = () => {
                 </h3>
                 <button 
                     onClick={() => setIsAddWorkspaceOpen(true)}
-                    className="p-1.5 hover:bg-primary-500/20 text-primary-500 rounded-lg transition-all"
+                    className="p-1.5 hover:bg-primary/20 text-primary rounded-lg transition-all"
                     title={t('common.add_workspace')}
                 >
                     <Plus size={14} strokeWidth={3} />
@@ -155,7 +155,7 @@ export const Sidebar = () => {
                         <Folder size={16} className={cn("shrink-0", activeWorkspace === ws.name ? "text-on-primary-container" : "text-brand-border")} />
                         <span className="truncate">{ws.name}</span>
                         {activeWorkspace === ws.name && (
-                            <div className="absolute left-0 top-2 bottom-2 w-1 bg-primary-500 rounded-full" />
+                            <div className="absolute left-0 top-2 bottom-2 w-1 bg-primary rounded-full" />
                         )}
                     </button>
                     <button 
@@ -164,7 +164,7 @@ export const Sidebar = () => {
                             e.stopPropagation();
                             handleDeleteWorkspace(ws.name);
                         }}
-                        className="p-2 text-gray-500 hover:text-error opacity-0 group-hover:opacity-100 transition-all rounded-lg hover:bg-error/10 shrink-0 relative z-30"
+                        className="p-2 text-on-surface-variant/50 hover:text-error opacity-0 group-hover:opacity-100 transition-all rounded-lg hover:bg-error/10 shrink-0 relative z-30"
                         title={t('common.delete')}
                     >
                         <Trash2 size={14} />
@@ -182,7 +182,7 @@ export const Sidebar = () => {
                 <div className="flex gap-1">
                     <button 
                         onClick={() => setIsArchiveOpen(true)}
-                        className="p-1.5 hover:bg-white/5 text-gray-500 hover:text-amber-500 rounded-lg transition-all"
+                        className="p-1.5 hover:bg-on-surface/5 text-on-surface-variant/50 hover:text-amber-500 rounded-lg transition-all"
                         title={t('sidebar.view_archived')}
                     >
                         <Archive size={14} />
@@ -192,7 +192,7 @@ export const Sidebar = () => {
                             const name = window.prompt(t('sidebar.new_channel_prompt'));
                             if (name) sendAction({ type: 'channel_create', name: name.trim().toLowerCase() });
                         }}
-                        className="p-1.5 hover:bg-primary-500/20 text-primary-500 rounded-lg transition-all"
+                        className="p-1.5 hover:bg-primary/20 text-primary rounded-lg transition-all"
                         title={t('sidebar.create_channel')}
                     >
                         <Plus size={14} strokeWidth={3} />
@@ -220,7 +220,7 @@ export const Sidebar = () => {
                         <Hash size={16} className={cn("shrink-0", currentChannel === channel ? "text-on-primary-container" : "text-brand-border")} />
                         <span className="truncate">{channel}</span>
                         {currentChannel === channel && (
-                            <div className="absolute left-0 top-2 bottom-2 w-1 bg-primary-500 rounded-full" />
+                            <div className="absolute left-0 top-2 bottom-2 w-1 bg-primary rounded-full" />
                         )}
                     </button>
                     {channel !== 'general' && (
@@ -230,7 +230,7 @@ export const Sidebar = () => {
                                 e.stopPropagation();
                                 handleArchiveChannel(channel);
                             }}
-                            className="p-2 text-gray-500 hover:text-amber-500 opacity-0 group-hover:opacity-100 transition-all rounded-lg hover:bg-amber-500/10 shrink-0 relative z-30"
+                            className="p-2 text-on-surface-variant/50 hover:text-amber-500 opacity-0 group-hover:opacity-100 transition-all rounded-lg hover:bg-amber-500/10 shrink-0 relative z-30"
                             title={t('common.archive')}
                         >
                             <Archive size={14} />
@@ -248,7 +248,7 @@ export const Sidebar = () => {
                 </h3>
                 <button 
                     onClick={() => setIsLaunchAgentOpen(true)}
-                    className="p-1.5 hover:bg-primary-500/20 text-primary-500 rounded-lg transition-all"
+                    className="p-1.5 hover:bg-primary/20 text-primary rounded-lg transition-all"
                     title={t('common.launch_ai')}
                 >
                     <Terminal size={14} strokeWidth={2.5} />
@@ -273,11 +273,11 @@ export const Sidebar = () => {
                     <span className="font-semibold group-hover:text-on-surface truncate">{info.label || id}</span>
                     {isThinking && (
                         <div className="ml-auto flex items-center gap-2">
-                            <span className="text-[9px] font-black text-primary-500 uppercase tracking-tighter animate-pulse">{t('messages.thinking')}</span>
+                            <span className="text-[9px] font-black text-primary uppercase tracking-tighter animate-pulse">{t('messages.thinking')}</span>
                             <div className="flex gap-0.5 shrink-0">
-                                <div className="w-1 h-1 rounded-full bg-primary-500 animate-bounce [animation-delay:-0.3s]" />
-                                <div className="w-1 h-1 rounded-full bg-primary-500 animate-bounce [animation-delay:-0.15s]" />
-                                <div className="w-1 h-1 rounded-full bg-primary-500 animate-bounce" />
+                                <div className="w-1 h-1 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
+                                <div className="w-1 h-1 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
+                                <div className="w-1 h-1 rounded-full bg-primary animate-bounce" />
                             </div>
                         </div>
                     )}

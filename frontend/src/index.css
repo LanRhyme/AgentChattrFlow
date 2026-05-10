@@ -1,42 +1,170 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-@theme {
-  /* Material Design 3 Green Palette */
-  --color-primary-50: #e8f5e9;
-  --color-primary-100: #c8e6c9;
-  --color-primary-200: #a5d6a7;
-  --color-primary-300: #81c784;
-  --color-primary-400: #66bb6a;
-  --color-primary-500: #4caf50;
-  --color-primary-600: #43a047;
-  --color-primary-700: #388e3c;
-  --color-primary-800: #2e7d32;
-  --color-primary-900: #1b5e20;
-  --color-primary-950: #0d2e10;
+/* 
+   Material Design 3 Precise Tonal System 
+   Derived from Seed Colors using standard M3 Tonal Palette mappings.
+*/
+
+/* --- THEME SEED COLORS --- */
+/* Green (Default) */
+:root {
+  --seed-primary: #b4f39e;
+  --seed-on-primary: #003a01;
+  --seed-primary-container: #005303;
+  --seed-on-primary-container: #d0ffbc;
+  --seed-surface: #101410;
+  --seed-on-surface: #e1e4d9;
+  --seed-surface-variant: #424940;
+  --seed-on-surface-variant: #c1c9be;
+  --seed-outline: #8b9389;
+  --seed-surface-container: #1b211b;
+  --brand-border: rgba(255, 255, 255, 0.08);
+}
+
+/* Blue */
+:root[data-theme-color="blue"] {
+  --seed-primary: #a1ceff;
+  --seed-on-primary: #003353;
+  --seed-primary-container: #00497d;
+  --seed-on-primary-container: #d2e5ff;
+  --seed-surface: #0e141f;
+  --seed-on-surface: #e1e2ec;
+  --seed-surface-variant: #42474e;
+  --seed-on-surface-variant: #c2c7ce;
+  --seed-outline: #8c9198;
+  --seed-surface-container: #191f27;
+  --brand-border: rgba(161, 206, 255, 0.15);
+}
+
+/* Purple */
+:root[data-theme-color="purple"] {
+  --seed-primary: #eeb4ff;
+  --seed-on-primary: #3b0054;
+  --seed-primary-container: #76008b;
+  --seed-on-primary-container: #fbdaff;
+  --seed-surface: #161118;
+  --seed-on-surface: #e8e0e9;
+  --seed-surface-variant: #4b444d;
+  --seed-on-surface-variant: #cdc3cd;
+  --seed-outline: #948e97;
+  --seed-surface-container: #211b22;
+  --brand-border: rgba(238, 180, 255, 0.15);
+}
+
+/* Rose */
+:root[data-theme-color="rose"] {
+  --seed-primary: #ffb2be;
+  --seed-on-primary: #680021;
+  --seed-primary-container: #8f002d;
+  --seed-on-primary-container: #ffd9de;
+  --seed-surface: #181113;
+  --seed-on-surface: #e9e0e1;
+  --seed-surface-variant: #4e4445;
+  --seed-on-surface-variant: #d0c3c4;
+  --seed-outline: #978e8f;
+  --seed-surface-container: #221b1d;
+  --brand-border: rgba(255, 178, 190, 0.15);
+}
+
+/* --- M3 SEMANTIC COLORS --- */
+/* Default (Tonal Spot) */
+:root,
+:root[data-palette-style="tonal_spot"] {
+  --primary: var(--seed-primary);
+  --on-primary: var(--seed-on-primary);
+  --primary-container: var(--seed-primary-container);
+  --on-primary-container: var(--seed-on-primary-container);
+  --surface: var(--seed-surface);
+  --on-surface: var(--seed-on-surface);
+  --surface-variant: var(--seed-surface-variant);
+  --on-surface-variant: var(--seed-on-surface-variant);
+  --outline: var(--seed-outline);
+  --surface-container: var(--seed-surface-container);
   
-  /* Headless UI v2.1 Refined Surfaces */
-  --color-brand-bg: #090a08;
-  --color-brand-panel: #141612;
-  --color-brand-border: rgba(255, 255, 255, 0.08);
+  --brand-bg: var(--surface);
+  --brand-panel: var(--surface-container);
+}
+
+/* Vibrant style - uses seed colors directly */
+:root[data-palette-style="vibrant"] {
+  --primary: var(--seed-primary);
+  --on-primary: var(--seed-on-primary);
+}
+
+/* Neutral style - desaturated colors */
+:root[data-palette-style="neutral"] {
+  --primary: var(--seed-on-surface);
+  --on-primary: var(--seed-surface);
+}
+
+/* Neutral style specific combinations */
+:root[data-palette-style="neutral"][data-theme-color="blue"] { 
+  --primary: #c1c7ce; 
+  --on-primary: #2b3137; 
+}
+:root[data-palette-style="neutral"][data-theme-color="purple"] { 
+  --primary: #cac4cf; 
+  --on-primary: #322e37; 
+}
+:root[data-palette-style="neutral"][data-theme-color="rose"] { 
+  --primary: #d0c2c3; 
+  --on-primary: #372e2f; 
+}
+:root[data-palette-style="neutral"][data-theme-color="green"] { 
+  --primary: #c2c9bd; 
+  --on-primary: #2d322a; 
+}
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary-container: var(--on-primary-container);
   
-  /* M3 Tokens */
-  --color-on-surface: #f1f2eb;
-  --color-on-surface-variant: #919489;
-  --color-primary-container: #2e4d25;
-  --color-on-primary-container: #c4efb3;
-  --color-surface-high: #1c1f18;
-  --color-surface-low: #10120d;
+  --color-brand-bg: var(--brand-bg);
+  --color-brand-panel: var(--brand-panel);
+  --color-brand-border: var(--brand-border);
+  
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-surface-high: var(--surface-container);
+  --color-surface-low: var(--surface);
+  --color-outline: var(--outline);
+
+  --color-primary-50: var(--primary-container);
+  --color-primary-400: var(--primary);
+  --color-primary-500: var(--primary);
+  --color-primary-900: var(--on-primary-container);
+}
+
+:root {
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary-container: var(--on-primary-container);
+  --color-brand-bg: var(--brand-bg);
+  --color-brand-panel: var(--brand-panel);
+  --color-brand-border: var(--brand-border);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-surface-high: var(--surface-container);
+  --color-surface-low: var(--surface);
+  --color-outline: var(--outline);
+  --color-primary-50: var(--primary-container);
+  --color-primary-400: var(--primary);
+  --color-primary-500: var(--primary);
+  --color-primary-900: var(--on-primary-container);
 }
 
 :root {
   font-family: "Inter", system-ui, -apple-system, sans-serif;
   line-height: 1.6;
   font-weight: 450;
-  color-scheme: dark;
-  background-color: var(--color-brand-bg);
-  color: var(--color-on-surface);
   -webkit-font-smoothing: antialiased;
+  color-scheme: dark;
+  background-color: var(--brand-bg);
+  color: var(--on-surface);
 }
 
 /* Ensure full screen occupancy */
@@ -57,9 +185,10 @@ body {
   width: 3px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--outline);
+  opacity: 0.2;
   border-radius: 10px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: var(--color-primary-500);
+  background: var(--primary);
 }

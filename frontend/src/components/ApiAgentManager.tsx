@@ -82,17 +82,17 @@ export const ApiAgentManager = () => {
     });
   };
 
-  if (isLoading) return <div className="p-8 text-center text-gray-500">Loading configurations...</div>;
+  if (isLoading) return <div className="p-8 text-center text-on-surface-variant/50">Loading configurations...</div>;
 
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50">
           Manual API Agents (Local LLMs / OpenAI Endpoints)
         </p>
         <button 
           onClick={addAgent}
-          className="flex items-center gap-2 px-3 py-1.5 bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 rounded-lg transition-all text-[10px] font-black uppercase tracking-widest border border-primary-500/20"
+          className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-all text-[10px] font-black uppercase tracking-widest border border-primary/20"
         >
           <Plus size={14} />
           {t('common.add_workspace')}
@@ -101,41 +101,41 @@ export const ApiAgentManager = () => {
 
       <div className="grid grid-cols-1 gap-4">
         {Object.entries(agents).map(([id, cfg]) => (
-          <div key={id} className="p-6 rounded-3xl bg-white/[0.02] border border-brand-border space-y-6 relative group">
+          <div key={id} className="p-6 rounded-3xl bg-on-surface/[0.02] border border-brand-border space-y-6 relative group">
             <button 
               onClick={() => removeAgent(id)}
-              className="absolute top-4 right-4 p-2 text-gray-500 hover:text-error opacity-0 group-hover:opacity-100 transition-all rounded-lg hover:bg-error/10"
+              className="absolute top-4 right-4 p-2 text-on-surface-variant hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all rounded-lg hover:bg-red-500/10"
             >
               <Trash2 size={16} />
             </button>
 
             <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-500">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                     <Terminal size={20} />
                 </div>
                 <div>
-                    <h5 className="font-black text-white text-sm tracking-tight uppercase">{id}</h5>
-                    <p className="text-[10px] text-gray-500 font-bold tracking-widest uppercase">ID ENTITY</p>
+                    <h5 className="font-black text-on-surface text-sm tracking-tight uppercase">{id}</h5>
+                    <p className="text-[10px] text-on-surface-variant/50 font-bold tracking-widest uppercase">ID ENTITY</p>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Label */}
                 <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1">
+                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 px-1">
                         <User size={12} /> Display Label
                     </label>
                     <input
                         type="text"
                         value={cfg.label || ''}
                         onChange={(e) => updateAgent(id, 'label', e.target.value)}
-                        className="w-full bg-black/20 border border-brand-border rounded-[16px] px-4 py-3 text-sm text-gray-100 focus:border-primary-500/50 outline-none transition-all"
+                        className="w-full bg-on-surface/10 border border-brand-border rounded-[16px] px-4 py-3 text-sm text-on-surface focus:border-primary/50 outline-none transition-all"
                     />
                 </div>
 
                 {/* Color */}
                 <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1">
+                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 px-1">
                         <Palette size={12} /> Theme Color
                     </label>
                     <div className="flex gap-2">
@@ -149,14 +149,14 @@ export const ApiAgentManager = () => {
                             type="text"
                             value={cfg.color || ''}
                             onChange={(e) => updateAgent(id, 'color', e.target.value)}
-                            className="flex-1 bg-black/20 border border-brand-border rounded-[16px] px-4 py-3 text-sm text-gray-100 focus:border-primary-500/50 outline-none transition-all"
+                            className="flex-1 bg-on-surface/10 border border-brand-border rounded-[16px] px-4 py-3 text-sm text-on-surface focus:border-primary/50 outline-none transition-all"
                         />
                     </div>
                 </div>
 
                 {/* API URL */}
                 <div className="space-y-2 md:col-span-2">
-                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1">
+                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 px-1">
                         <Globe size={12} /> Base URL (OpenAI Compatible)
                     </label>
                     <input
@@ -164,13 +164,13 @@ export const ApiAgentManager = () => {
                         value={cfg.api_url || ''}
                         onChange={(e) => updateAgent(id, 'api_url', e.target.value)}
                         placeholder="e.g. http://localhost:11434/v1"
-                        className="w-full bg-black/20 border border-brand-border rounded-[16px] px-4 py-3 text-sm text-gray-100 focus:border-primary-500/50 outline-none transition-all"
+                        className="w-full bg-on-surface/10 border border-brand-border rounded-[16px] px-4 py-3 text-sm text-on-surface focus:border-primary/50 outline-none transition-all"
                     />
                 </div>
 
                 {/* API Key Env */}
                 <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1">
+                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 px-1">
                         <Key size={12} /> API Key Env Var
                     </label>
                     <input
@@ -178,13 +178,13 @@ export const ApiAgentManager = () => {
                         value={cfg.api_key_env || ''}
                         onChange={(e) => updateAgent(id, 'api_key_env', e.target.value)}
                         placeholder="e.g. QWEN_API_KEY (leave empty if none)"
-                        className="w-full bg-black/20 border border-brand-border rounded-[16px] px-4 py-3 text-sm text-gray-100 focus:border-primary-500/50 outline-none transition-all"
+                        className="w-full bg-on-surface/10 border border-brand-border rounded-[16px] px-4 py-3 text-sm text-on-surface focus:border-primary/50 outline-none transition-all"
                     />
                 </div>
 
                 {/* Model Name */}
                 <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1">
+                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 px-1">
                         <Terminal size={12} /> Model Identifier
                     </label>
                     <input
@@ -192,20 +192,20 @@ export const ApiAgentManager = () => {
                         value={cfg.model || ''}
                         onChange={(e) => updateAgent(id, 'model', e.target.value)}
                         placeholder="e.g. qwen-2.5-7b"
-                        className="w-full bg-black/20 border border-brand-border rounded-[16px] px-4 py-3 text-sm text-gray-100 focus:border-primary-500/50 outline-none transition-all"
+                        className="w-full bg-on-surface/10 border border-brand-border rounded-[16px] px-4 py-3 text-sm text-on-surface focus:border-primary/50 outline-none transition-all"
                     />
                 </div>
 
                 {/* System Prompt */}
                 <div className="space-y-2 md:col-span-2">
-                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1">
+                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 px-1">
                         System Prompt Override
                     </label>
                     <textarea
                         value={cfg.system_prompt || ''}
                         onChange={(e) => updateAgent(id, 'system_prompt', e.target.value)}
                         rows={3}
-                        className="w-full bg-black/20 border border-brand-border rounded-[20px] px-4 py-3 text-sm text-gray-100 focus:border-primary-500/50 outline-none transition-all resize-none custom-scrollbar"
+                        className="w-full bg-on-surface/10 border border-brand-border rounded-[20px] px-4 py-3 text-sm text-on-surface focus:border-primary/50 outline-none transition-all resize-none custom-scrollbar"
                     />
                 </div>
             </div>
@@ -217,7 +217,7 @@ export const ApiAgentManager = () => {
         <button 
           onClick={handleSave}
           disabled={isSaving}
-          className="flex items-center gap-3 px-8 py-4 bg-primary-500 hover:bg-primary-400 text-brand-bg rounded-[24px] text-xs font-black uppercase tracking-[0.2em] transition-all shadow-[0_12px_32px_-4px_rgba(76,175,80,0.4)] disabled:opacity-50"
+          className="flex items-center gap-3 px-8 py-4 bg-primary hover:bg-primary text-brand-bg rounded-[24px] text-xs font-black uppercase tracking-[0.2em] transition-all shadow-[0_12px_32px_-4px_var(--primary)] disabled:opacity-50"
         >
           {isSaving ? 'Synchronizing...' : (
             <>

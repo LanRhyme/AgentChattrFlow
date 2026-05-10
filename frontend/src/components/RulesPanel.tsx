@@ -79,17 +79,17 @@ export const RulesPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                   <div className="flex h-full flex-col bg-brand-panel shadow-2xl border-l border-brand-border ring-1 ring-white/5">
                     <div className="flex items-center justify-between px-8 py-8">
                       <div>
-                          <div className="flex items-center gap-2 text-primary-500 mb-1">
+                          <div className="flex items-center gap-2 text-primary mb-1">
                              <Shield size={16} strokeWidth={2.5} />
                              <span className="text-[11px] font-black uppercase tracking-[0.2em]">{t('rules.protocol_control')}</span>
                           </div>
-                          <Dialog.Title className="text-2xl font-bold text-white tracking-tight">
+                          <Dialog.Title className="text-2xl font-bold text-on-surface tracking-tight">
                               {t('rules.title')}
                           </Dialog.Title>
                       </div>
                       <button
                         onClick={onClose}
-                        className="p-3 text-on-surface-variant hover:text-white rounded-full bg-white/5 hover:bg-white/10 transition-all border border-brand-border"
+                        className="p-3 text-on-surface-variant hover:text-on-surface rounded-full bg-on-surface/5 hover:bg-on-surface/10 transition-all border border-brand-border"
                       >
                         <X size={20} />
                       </button>
@@ -97,44 +97,44 @@ export const RulesPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar px-8 space-y-10 pb-12">
                       <section>
-                        <h3 className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-6 px-1">
-                          <CheckCircle2 size={12} className="text-primary-500" />
+                        <h3 className="flex items-center gap-2 text-[10px] font-black text-on-surface-variant/50 uppercase tracking-[0.2em] mb-6 px-1">
+                          <CheckCircle2 size={12} className="text-primary" />
                           {t('rules.active_protocols')}
                         </h3>
                         {activeRules.length === 0 ? (
-                            <div className="p-8 rounded-3xl border border-dashed border-white/5 bg-white/[0.01] text-center">
-                                <p className="text-xs font-medium text-gray-600">{t('rules.no_active')}</p>
+                            <div className="p-8 rounded-3xl border border-dashed border-outline/20 bg-on-surface/[0.01] text-center">
+                                <p className="text-xs font-medium text-on-surface-variant/40">{t('rules.no_active')}</p>
                             </div>
                         ) : (
                             <div className="space-y-3">
                             {activeRules.map((rule) => (
-                                <div key={rule.id} className="p-5 bg-white/[0.03] border border-brand-border rounded-[24px] group relative hover:bg-white/[0.05] transition-all">
+                                <div key={rule.id} className="p-5 bg-on-surface/[0.03] border border-brand-border rounded-[24px] group relative hover:bg-on-surface/[0.05] transition-all">
                                     {editingRuleId === rule.id ? (
                                         <div className="space-y-3">
                                             <textarea
                                                 autoFocus
                                                 value={editRuleText}
                                                 onChange={(e) => setEditRuleText(e.target.value)}
-                                                className="w-full bg-black/20 border border-primary-500/30 rounded-xl p-3 text-sm text-white focus:ring-0 resize-none h-24 custom-scrollbar"
+                                                className="w-full bg-surface-low/50 border border-primary/30 rounded-xl p-3 text-sm text-on-surface focus:ring-0 resize-none h-24 custom-scrollbar"
                                             />
                                             <div className="flex gap-2">
-                                                <button onClick={() => saveEdit(rule.id)} className="px-3 py-1.5 bg-primary-500 text-brand-bg rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-primary-400">{t('common.save')}</button>
-                                                <button onClick={() => setEditingRuleId(null)} className="px-3 py-1.5 bg-white/10 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-white/20">{t('common.cancel')}</button>
+                                                <button onClick={() => saveEdit(rule.id)} className="px-3 py-1.5 bg-primary text-brand-bg rounded-lg text-xs font-bold uppercase tracking-widest hover:opacity-90">{t('common.save')}</button>
+                                                <button onClick={() => setEditingRuleId(null)} className="px-3 py-1.5 bg-on-surface/10 text-on-surface rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-on-surface/20">{t('common.cancel')}</button>
                                             </div>
                                         </div>
                                     ) : (
                                         <>
-                                            <p className="text-[15px] text-gray-200 leading-relaxed pr-8">
+                                            <p className="text-[15px] text-on-surface leading-relaxed pr-8">
                                                 {rule.text}
                                             </p>
                                             <div className="mt-4 flex items-center gap-4">
                                                 <button onClick={() => updateStatus(rule.id, 'draft')} className="text-[10px] font-black uppercase tracking-widest text-amber-500 hover:text-amber-400 transition-colors">{t('rules.demote_to_draft')}</button>
                                             </div>
                                             <div className="absolute top-4 right-4 flex opacity-0 group-hover:opacity-100 transition-all">
-                                                <button onClick={() => startEdit(rule.id, rule.text)} className="p-2 text-gray-500 hover:text-primary-400 rounded-lg hover:bg-primary-500/10" title={t('common.rename')}>
+                                                <button onClick={() => startEdit(rule.id, rule.text)} className="p-2 text-on-surface-variant/50 hover:text-primary rounded-lg hover:bg-primary/10" title={t('common.rename')}>
                                                     <Edit2 size={16} />
                                                 </button>
-                                                <button onClick={() => deleteRule(rule.id)} className="p-2 text-gray-500 hover:text-red-400 rounded-lg hover:bg-red-400/10" title={t('common.delete')}>
+                                                <button onClick={() => deleteRule(rule.id)} className="p-2 text-on-surface-variant/50 hover:text-red-400 rounded-lg hover:bg-red-400/10" title={t('common.delete')}>
                                                     <Trash2 size={16} />
                                                 </button>
                                             </div>
@@ -147,44 +147,44 @@ export const RulesPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                       </section>
 
                       <section>
-                        <h3 className="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-6 px-1">
+                        <h3 className="flex items-center gap-2 text-[10px] font-black text-on-surface-variant/50 uppercase tracking-[0.2em] mb-6 px-1">
                           <Clock size={12} className="text-amber-500" />
                           {t('rules.neural_drafts')}
                         </h3>
                         {draftRules.length === 0 ? (
-                            <div className="p-8 rounded-3xl border border-dashed border-white/5 bg-white/[0.01] text-center">
-                                <p className="text-xs font-medium text-gray-600">{t('rules.no_drafts')}</p>
+                            <div className="p-8 rounded-3xl border border-dashed border-outline/20 bg-on-surface/[0.01] text-center">
+                                <p className="text-xs font-medium text-on-surface-variant/40">{t('rules.no_drafts')}</p>
                             </div>
                         ) : (
                             <div className="space-y-3">
                             {draftRules.map((rule) => (
-                                <div key={rule.id} className="p-5 bg-white/[0.02] border border-white/5 border-dashed rounded-[24px] group relative hover:bg-white/[0.04] transition-all">
+                                <div key={rule.id} className="p-5 bg-on-surface/[0.02] border border-outline/30 border-dashed rounded-[24px] group relative hover:bg-on-surface/[0.04] transition-all">
                                     {editingRuleId === rule.id ? (
                                         <div className="space-y-3">
                                             <textarea
                                                 autoFocus
                                                 value={editRuleText}
                                                 onChange={(e) => setEditRuleText(e.target.value)}
-                                                className="w-full bg-black/20 border border-primary-500/30 rounded-xl p-3 text-sm text-white focus:ring-0 resize-none h-24 custom-scrollbar"
+                                                className="w-full bg-surface-low/50 border border-primary/30 rounded-xl p-3 text-sm text-on-surface focus:ring-0 resize-none h-24 custom-scrollbar"
                                             />
                                             <div className="flex gap-2">
-                                                <button onClick={() => saveEdit(rule.id)} className="px-3 py-1.5 bg-primary-500 text-brand-bg rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-primary-400">{t('common.save')}</button>
-                                                <button onClick={() => setEditingRuleId(null)} className="px-3 py-1.5 bg-white/10 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-white/20">{t('common.cancel')}</button>
+                                                <button onClick={() => saveEdit(rule.id)} className="px-3 py-1.5 bg-primary text-brand-bg rounded-lg text-xs font-bold uppercase tracking-widest hover:opacity-90">{t('common.save')}</button>
+                                                <button onClick={() => setEditingRuleId(null)} className="px-3 py-1.5 bg-on-surface/10 text-on-surface rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-on-surface/20">{t('common.cancel')}</button>
                                             </div>
                                         </div>
                                     ) : (
                                         <>
-                                            <p className="text-[14px] text-gray-500 leading-relaxed pr-8 italic">
+                                            <p className="text-[14px] text-on-surface-variant/60 leading-relaxed pr-8 italic">
                                                 {rule.text}
                                             </p>
                                             <div className="mt-4 flex items-center gap-4">
-                                                <button onClick={() => updateStatus(rule.id, 'active')} className="text-[10px] font-black uppercase tracking-widest text-primary-500 hover:text-primary-400 transition-colors">{t('rules.activate')}</button>
+                                                <button onClick={() => updateStatus(rule.id, 'active')} className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary/80 transition-colors">{t('rules.activate')}</button>
                                             </div>
                                             <div className="absolute top-4 right-4 flex opacity-0 group-hover:opacity-100 transition-all">
-                                                <button onClick={() => startEdit(rule.id, rule.text)} className="p-2 text-gray-500 hover:text-primary-400 rounded-lg hover:bg-primary-500/10" title={t('common.rename')}>
+                                                <button onClick={() => startEdit(rule.id, rule.text)} className="p-2 text-on-surface-variant/50 hover:text-primary rounded-lg hover:bg-primary/10" title={t('common.rename')}>
                                                     <Edit2 size={16} />
                                                 </button>
-                                                <button onClick={() => deleteRule(rule.id)} className="p-2 text-gray-500 hover:text-red-400 rounded-lg hover:bg-red-400/10" title={t('common.delete')}>
+                                                <button onClick={() => deleteRule(rule.id)} className="p-2 text-on-surface-variant/50 hover:text-red-400 rounded-lg hover:bg-red-400/10" title={t('common.delete')}>
                                                     <Trash2 size={16} />
                                                 </button>
                                             </div>
@@ -198,17 +198,17 @@ export const RulesPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
 
                       {isCreating && (
                           <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                              <div className="p-5 bg-white/[0.02] border border-primary-500/30 border-dashed rounded-[24px]">
+                              <div className="p-5 bg-on-surface/[0.02] border border-primary/30 border-dashed rounded-[24px]">
                                   <textarea
                                       autoFocus
                                       value={newRuleText}
                                       onChange={(e) => setNewRuleText(e.target.value)}
                                       placeholder={t('rules.new_directive_placeholder')}
-                                      className="w-full bg-transparent border-none text-sm text-white placeholder-gray-600 focus:ring-0 resize-none h-24 custom-scrollbar mb-4"
+                                      className="w-full bg-transparent border-none text-sm text-on-surface placeholder-on-surface-variant/40 focus:ring-0 resize-none h-24 custom-scrollbar mb-4"
                                   />
                                   <div className="flex items-center gap-3">
-                                      <button onClick={handleCreateRule} className="px-4 py-2 bg-primary-500 text-brand-bg rounded-xl text-xs font-bold uppercase tracking-widest transition-all">{t('rules.save_directive')}</button>
-                                      <button onClick={() => setIsCreating(false)} className="px-4 py-2 bg-white/5 text-gray-400 rounded-xl text-xs font-bold uppercase tracking-widest hover:text-white transition-all">{t('common.cancel')}</button>
+                                      <button onClick={handleCreateRule} className="px-4 py-2 bg-primary text-brand-bg rounded-xl text-xs font-bold uppercase tracking-widest transition-all hover:opacity-90">{t('rules.save_directive')}</button>
+                                      <button onClick={() => setIsCreating(false)} className="px-4 py-2 bg-on-surface/5 text-on-surface-variant rounded-xl text-xs font-bold uppercase tracking-widest hover:text-on-surface transition-all">{t('common.cancel')}</button>
                                   </div>
                               </div>
                           </section>
@@ -224,7 +224,7 @@ export const RulesPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                                 if (el) el.scrollTop = el.scrollHeight;
                             }, 50);
                         }} 
-                        className="w-full flex items-center justify-center gap-3 py-5 bg-primary-600 text-brand-bg hover:bg-primary-500 rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl active:scale-[0.98]"
+                        className="w-full flex items-center justify-center gap-3 py-5 bg-primary text-brand-bg hover:opacity-90 rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl active:scale-[0.98]"
                       >
                         <Plus size={18} strokeWidth={3} />
                         {t('rules.inject_new')}

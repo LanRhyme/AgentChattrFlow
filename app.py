@@ -51,6 +51,9 @@ room_settings: dict = {
     "title": "agentchattr",
     "username": "user",
     "font": "sans",
+    "theme": "dark",
+    "theme_color": "green",
+    "palette_style": "tonal_spot",
     "channels": ["general"],
     "archived_channels": [],
     "history_limit": "all",
@@ -1254,6 +1257,10 @@ async def websocket_endpoint(websocket: WebSocket):
                         pass
                 if "contrast" in new and new["contrast"] in ("normal", "high"):
                     room_settings["contrast"] = new["contrast"]
+                if "theme" in new and new["theme"] in ("light", "dark", "system"):
+                    room_settings["theme"] = new["theme"]
+                if "theme_color" in new and new["theme_color"] in ("green", "blue", "purple", "rose"):
+                    room_settings["theme_color"] = new["theme_color"]
                 if "rules_refresh_interval" in new:
                     try:
                         ri = int(new["rules_refresh_interval"])

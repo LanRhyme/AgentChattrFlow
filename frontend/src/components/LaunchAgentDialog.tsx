@@ -106,7 +106,7 @@ export const LaunchAgentDialog = ({ isOpen, onClose }: LaunchAgentDialogProps) =
               <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-[32px] bg-brand-panel border border-brand-border p-8 shadow-2xl transition-all">
                 <div className="flex items-center justify-between mb-8">
                   <Dialog.Title className="text-xl font-black text-on-surface uppercase tracking-tight flex items-center gap-3">
-                    <Terminal size={24} className="text-primary-500" />
+                    <Terminal size={24} className="text-primary" />
                     {t('common.launch_ai')}
                   </Dialog.Title>
                   <button onClick={onClose} className="p-2 hover:bg-surface-high rounded-full transition-colors">
@@ -116,7 +116,7 @@ export const LaunchAgentDialog = ({ isOpen, onClose }: LaunchAgentDialogProps) =
 
                 {isLoading ? (
                   <div className="py-12 flex flex-col items-center justify-center gap-4 text-on-surface-variant">
-                    <Loader2 size={32} className="animate-spin text-primary-500" />
+                    <Loader2 size={32} className="animate-spin text-primary" />
                     <p className="text-sm font-bold uppercase tracking-widest">{t('messages.thinking')}</p>
                   </div>
                 ) : (
@@ -134,7 +134,7 @@ export const LaunchAgentDialog = ({ isOpen, onClose }: LaunchAgentDialogProps) =
                             "group flex flex-col p-4 rounded-2xl border transition-all text-left active:scale-[0.98] disabled:opacity-50 relative",
                             isApi 
                               ? "bg-amber-500/5 border-amber-500/20 hover:border-amber-500/40" 
-                              : "bg-surface-low border-brand-border hover:bg-surface-high hover:border-primary-500/30"
+                              : "bg-surface-low border-brand-border hover:bg-surface-high hover:border-primary/30"
                           )}
                         >
                           <div className="flex items-center justify-between mb-2">
@@ -146,7 +146,7 @@ export const LaunchAgentDialog = ({ isOpen, onClose }: LaunchAgentDialogProps) =
                                 <span className="text-[8px] font-black bg-amber-500 text-black px-1.5 py-0.5 rounded-full uppercase tracking-tighter">API</span>
                               )}
                               {agent.mode && (
-                                <span className="text-[8px] font-black bg-primary-500 text-white px-1.5 py-0.5 rounded-full uppercase tracking-tighter">{agent.mode}</span>
+                                <span className="text-[8px] font-black bg-primary text-brand-bg px-1.5 py-0.5 rounded-full uppercase tracking-tighter">{agent.mode}</span>
                               )}
                           </div>
                           
@@ -156,11 +156,11 @@ export const LaunchAgentDialog = ({ isOpen, onClose }: LaunchAgentDialogProps) =
                               <p className="text-[10px] text-on-surface-variant uppercase tracking-widest opacity-60 mt-0.5">{agent.name}</p>
                             </div>
                             {isLaunching === launchId ? (
-                              <Loader2 size={16} className="animate-spin text-primary-500" />
+                              <Loader2 size={16} className="animate-spin text-primary" />
                             ) : (
                               <Terminal size={16} className={cn(
                                 "transition-colors",
-                                isApi ? "text-amber-500/50 group-hover:text-amber-500" : "text-brand-border group-hover:text-primary-500"
+                                isApi ? "text-amber-500/50 group-hover:text-amber-500" : "text-brand-border group-hover:text-primary"
                               )} />
                             )}
                           </div>

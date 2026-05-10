@@ -52,15 +52,15 @@ export const ArchiveDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
                     <Archive size={24} />
                   </div>
                   <div>
-                      <Dialog.Title as="h3" className="text-xl font-black text-white tracking-tight leading-none">
+                      <Dialog.Title as="h3" className="text-xl font-black text-on-surface tracking-tight leading-none">
                         {t('sidebar.view_archived')}
                       </Dialog.Title>
-                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.3em] mt-2">Dormant neural nodes</p>
+                      <p className="text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-[0.3em] mt-2">Dormant neural nodes</p>
                   </div>
                 </div>
                 <button
                   onClick={onClose}
-                  className="rounded-full p-2 text-gray-500 hover:bg-white/5 hover:text-white transition-all border border-brand-border"
+                  className="rounded-full p-2 text-on-surface-variant hover:bg-on-surface/5 hover:text-on-surface transition-all border border-brand-border"
                 >
                   <X size={20} />
                 </button>
@@ -68,21 +68,21 @@ export const ArchiveDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
               <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
                 {archivedChannels.length === 0 ? (
-                    <div className="py-12 text-center opacity-20 border-2 border-dashed border-white/5 rounded-3xl">
+                    <div className="py-12 text-center opacity-20 border-2 border-dashed border-brand-border/30 rounded-3xl">
                         <Hash size={32} className="mx-auto mb-2" />
                         <p className="text-xs font-bold uppercase tracking-widest">No archived nodes</p>
                     </div>
                 ) : (
                     archivedChannels.map(name => (
-                        <div key={name} className="flex items-center justify-between p-4 bg-white/[0.03] border border-brand-border rounded-2xl group hover:bg-white/[0.05] transition-all">
+                        <div key={name} className="flex items-center justify-between p-4 bg-on-surface/[0.03] border border-brand-border rounded-2xl group hover:bg-on-surface/[0.05] transition-all">
                             <div className="flex items-center gap-3 min-w-0">
-                                <Hash size={16} className="text-gray-600 shrink-0" />
-                                <span className="text-sm font-bold text-gray-200 truncate">{name}</span>
+                                <Hash size={16} className="text-on-surface-variant/30 shrink-0" />
+                                <span className="text-sm font-bold text-on-surface truncate">{name}</span>
                             </div>
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button 
                                     onClick={() => handleRestore(name)}
-                                    className="p-2 text-primary-500 hover:bg-primary-500/10 rounded-xl transition-all"
+                                    className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-all"
                                     title="Restore channel"
                                 >
                                     <RotateCcw size={16} />
@@ -103,7 +103,7 @@ export const ArchiveDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
               <div className="mt-8 pt-8 border-t border-white/5">
                 <button
                   type="button"
-                  className="w-full inline-flex justify-center rounded-[24px] border border-transparent bg-white/[0.05] px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-gray-400 hover:bg-white/10 hover:text-white transition-all"
+                  className="w-full inline-flex justify-center rounded-[24px] border border-transparent bg-on-surface/[0.05] px-6 py-4 text-xs font-black uppercase tracking-[0.2em] text-on-surface-variant/50 hover:bg-on-surface/10 hover:text-on-surface transition-all"
                   onClick={onClose}
                 >
                   {t('common.cancel')}

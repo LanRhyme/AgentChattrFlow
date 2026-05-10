@@ -130,17 +130,17 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
                   <div className="flex h-full flex-col bg-brand-panel shadow-2xl border-l border-brand-border ring-1 ring-white/5">
                     <div className="flex items-center justify-between px-8 py-8 shrink-0">
                       <div>
-                          <div className="flex items-center gap-2 text-primary-500 mb-1">
+                          <div className="flex items-center gap-2 text-primary mb-1">
                              <Zap size={16} strokeWidth={2.5} />
                              <span className="text-[11px] font-black uppercase tracking-[0.2em]">{t('sessions.neural_engine')}</span>
                           </div>
-                          <Dialog.Title className="text-2xl font-bold text-white tracking-tight">
+                          <Dialog.Title className="text-2xl font-bold text-on-surface tracking-tight">
                               {t('sessions.title')}
                           </Dialog.Title>
                       </div>
                       <button
                         onClick={onClose}
-                        className="p-3 text-on-surface-variant hover:text-white rounded-full bg-white/5 hover:bg-white/10 transition-all border border-brand-border"
+                        className="p-3 text-on-surface-variant hover:text-on-surface rounded-full bg-on-surface/5 hover:bg-on-surface/10 transition-all border border-brand-border"
                       >
                         <X size={20} />
                       </button>
@@ -151,24 +151,24 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
                         <div className="animate-in slide-in-from-right-4 duration-300 space-y-8">
                             <button 
                                 onClick={() => setSelectedJob(null)}
-                                className="inline-flex items-center gap-2 text-xs font-bold text-primary-500 hover:text-primary-400 mb-2 bg-primary-500/5 px-3 py-1.5 rounded-full border border-primary-500/20 transition-all"
+                                className="inline-flex items-center gap-2 text-xs font-bold text-primary hover:text-primary/80 mb-2 bg-primary/5 px-3 py-1.5 rounded-full border border-primary/20 transition-all"
                             >
                                 <ChevronRight size={14} className="rotate-180" /> {t('sessions.back_to_templates')}
                             </button>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1">{t('sessions.session_goal')}</label>
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 px-1">{t('sessions.session_goal')}</label>
                                 <input
                                     type="text"
                                     value={goal}
                                     onChange={e => setGoal(e.target.value)}
                                     placeholder={t('sessions.goal_placeholder')}
-                                    className="w-full bg-white/[0.03] border border-brand-border rounded-[20px] px-5 py-4 text-sm text-gray-100 focus:border-primary-500/50 outline-none transition-all shadow-inner"
+                                    className="w-full bg-on-surface/[0.03] border border-brand-border rounded-[20px] px-5 py-4 text-sm text-on-surface focus:border-primary/50 outline-none transition-all shadow-inner"
                                 />
                             </div>
 
                             <div className="space-y-6">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1 block">{t('sessions.cast_config')}</label>
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 px-1 block">{t('sessions.cast_config')}</label>
                                 <div className="grid grid-cols-1 gap-4">
                                     {selectedTemplate.roles.map(role => (
                                         <Dropdown 
@@ -184,7 +184,7 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
                             <button
                                 onClick={handleLaunch}
-                                className="w-full flex items-center justify-center gap-3 py-5 bg-primary-500 text-brand-bg hover:bg-primary-400 rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl active:scale-[0.98]"
+                                className="w-full flex items-center justify-center gap-3 py-5 bg-primary text-brand-bg hover:opacity-90 rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl active:scale-[0.98]"
                             >
                                 <Play size={18} fill="currentColor" />
                                 {t('sessions.launch_sequence')}
@@ -194,7 +194,7 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
                         <div className="animate-in slide-in-from-bottom-4 duration-300 space-y-8">
                              <button 
                                 onClick={() => setIsDesigning(false)}
-                                className="inline-flex items-center gap-2 text-xs font-bold text-primary-500 hover:text-primary-400 mb-2 bg-primary-500/5 px-3 py-1.5 rounded-full border border-primary-500/20 transition-all"
+                                className="inline-flex items-center gap-2 text-xs font-bold text-primary hover:text-primary/80 mb-2 bg-primary/5 px-3 py-1.5 rounded-full border border-primary/20 transition-all"
                             >
                                 <ChevronRight size={14} className="rotate-180" /> {t('common.back')}
                             </button>
@@ -208,19 +208,19 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
                             />
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 px-1">{t('sessions.requirement_analysis')}</label>
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 px-1">{t('sessions.requirement_analysis')}</label>
                                 <textarea
                                     value={designDesc}
                                     onChange={e => setDesignDesc(e.target.value)}
                                     placeholder={t('sessions.requirement_placeholder')}
-                                    className="w-full bg-white/[0.03] border border-brand-border rounded-[24px] px-5 py-5 text-sm text-gray-100 focus:border-primary-500/50 outline-none transition-all h-40 resize-none custom-scrollbar"
+                                    className="w-full bg-on-surface/[0.03] border border-brand-border rounded-[24px] px-5 py-5 text-sm text-on-surface focus:border-primary/50 outline-none transition-all h-40 resize-none custom-scrollbar"
                                 />
                             </div>
 
                             <button
                                 onClick={handleSendDesignRequest}
                                 disabled={!designAgent || !designDesc.trim()}
-                                className="w-full flex items-center justify-center gap-3 py-5 bg-white text-brand-bg hover:bg-primary-100 disabled:opacity-20 rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl active:scale-[0.98]"
+                                className="w-full flex items-center justify-center gap-3 py-5 bg-primary text-brand-bg hover:opacity-90 disabled:opacity-20 rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl active:scale-[0.98]"
                             >
                                 <Plus size={18} strokeWidth={3} />
                                 {t('sessions.propose_custom')}
@@ -233,18 +233,18 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
                                     <button
                                         key={tmpl.id}
                                         onClick={() => startCast(tmpl)}
-                                        className="text-left p-6 rounded-3xl bg-white/[0.03] border border-brand-border hover:bg-white/[0.06] hover:border-primary-500/30 transition-all group"
+                                        className="text-left p-6 rounded-3xl bg-on-surface/[0.03] border border-brand-border hover:bg-on-surface/[0.06] hover:border-primary/30 transition-all group"
                                     >
                                         <div className="flex justify-between items-start mb-3">
-                                            <h4 className="text-lg font-bold text-gray-100 group-hover:text-primary-400 transition-colors">{tmpl.name}</h4>
-                                            <div className="p-2 bg-primary-500/10 rounded-xl text-primary-500 opacity-0 group-hover:opacity-100 transition-all">
+                                            <h4 className="text-lg font-bold text-on-surface group-hover:text-primary transition-colors">{tmpl.name}</h4>
+                                            <div className="p-2 bg-primary/10 rounded-xl text-primary opacity-0 group-hover:opacity-100 transition-all">
                                                 <ChevronRight size={16} />
                                             </div>
                                         </div>
-                                        <p className="text-xs text-gray-500 leading-relaxed mb-4 line-clamp-2">{tmpl.description}</p>
+                                        <p className="text-xs text-on-surface-variant/50 leading-relaxed mb-4 line-clamp-2">{tmpl.description}</p>
                                         <div className="flex flex-wrap gap-2">
                                             {tmpl.roles.map(r => (
-                                                <span key={r} className="px-2 py-0.5 rounded-lg bg-black/30 border border-white/5 text-[9px] font-bold text-gray-500 uppercase tracking-widest">{r}</span>
+                                                <span key={r} className="px-2 py-0.5 rounded-lg bg-on-surface/10 border border-brand-border text-[9px] font-bold text-on-surface-variant/50 uppercase tracking-widest">{r}</span>
                                             ))}
                                         </div>
                                     </button>
@@ -252,13 +252,13 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
                                 <button
                                     onClick={() => setIsDesigning(true)}
-                                    className="p-6 rounded-3xl border-2 border-dashed border-white/5 hover:border-primary-500/30 bg-white/[0.01] hover:bg-white/[0.02] transition-all text-center group"
+                                    className="p-6 rounded-3xl border-2 border-dashed border-brand-border/30 hover:border-primary/30 bg-on-surface/[0.01] hover:bg-on-surface/[0.02] transition-all text-center group"
                                 >
-                                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                                        <Plus size={24} className="text-gray-500 group-hover:text-primary-500" />
+                                    <div className="w-12 h-12 rounded-2xl bg-on-surface/5 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                        <Plus size={24} className="text-on-surface-variant/50 group-hover:text-primary" />
                                     </div>
-                                    <h4 className="text-sm font-black uppercase tracking-widest text-gray-500 group-hover:text-white">{t('sessions.design_custom')}</h4>
-                                    <p className="text-[10px] text-gray-600 mt-1 uppercase tracking-tighter">{t('sessions.design_desc')}</p>
+                                    <h4 className="text-sm font-black uppercase tracking-widest text-on-surface-variant/50 group-hover:text-on-surface">{t('sessions.design_custom')}</h4>
+                                    <p className="text-[10px] text-on-surface-variant/30 mt-1 uppercase tracking-tighter">{t('sessions.design_desc')}</p>
                                 </button>
                             </div>
                         </div>

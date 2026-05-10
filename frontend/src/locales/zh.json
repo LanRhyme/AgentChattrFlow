@@ -144,8 +144,23 @@
     "neural_sync": "同步策略",
     "confirm_sequence": "应用更改",
     "data_archive": "数据归档导出",
-    "localization": "语言设置",
+    "localization": "语言与本地化",
     "interface_language": "界面语言",
+    "appearance": "外观与主题",
+    "brightness_mode": "亮度模式",
+    "primary_color": "品牌主色",
+    "palette_style": "调色板样式",
+    "theme_modes": {
+        "dark": "深色模式",
+        "system": "跟随系统"
+    },
+    "palette_styles": {
+        "tonal_spot": "调性重点 (推荐)",
+        "vibrant": "活力鲜艳",
+        "expressive": "富有表现力",
+        "content": "内容基调",
+        "neutral": "中性色彩"
+    },
     "fonts": {
       "sans": "现代无衬线 (推荐)",
       "mono": "技术等宽",
