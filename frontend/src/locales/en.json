@@ -27,6 +27,7 @@
     "create": "Create",
     "delete": "Delete",
     "delete_confirm": "Are you sure you want to delete this? This action cannot be undone.",
+    "delete_failed": "Failed to delete. Please try again.",
     "pin": "Pin",
     "unpin": "Unpin",
     "details": "Details",

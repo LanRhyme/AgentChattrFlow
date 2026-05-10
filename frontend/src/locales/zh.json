@@ -27,6 +27,7 @@
     "create": "新建",
     "delete": "删除",
     "delete_confirm": "确定要删除吗？此操作不可撤销。",
+    "delete_failed": "删除失败，请重试。",
     "pin": "置顶",
     "unpin": "取消置顶",
     "details": "详细信息",
@@ -99,7 +100,6 @@
     "job_title": "任务标题",
     "job_title_placeholder": "输入任务标题...",
     "open": "待处理",
-    "active": "进行中",
     "done": "已完成",
     "archived": "已归档",
     "no_comms": "暂无情报交流"

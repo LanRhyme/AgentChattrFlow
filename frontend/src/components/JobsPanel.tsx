@@ -112,10 +112,14 @@ export const JobsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   const handleDeleteJob = async (id: number) => {
       if (!window.confirm(t('common.delete_confirm'))) return;
       try {
-          await fetch(`/api/jobs/${id}?permanent=true`, {
+          const res = await fetch(`/api/jobs/${id}?permanent=true`, {
               method: 'DELETE',
               headers: { 'X-Session-Token': (window as any).__SESSION_TOKEN__ || '' }
           });
+          if (!res.ok) {
+              alert(t('common.delete_failed'));
+              return;
+          }
           if (selectedJob?.id === id) setSelectedJob(null);
       } catch (err) {
           console.error(err);
