@@ -2519,6 +2519,37 @@ async def set_active_workspace(request: Request):
     return JSONResponse({"ok": True})
 
 
+@app.get("/api/workspaces/files")
+async def list_workspace_files():
+    """List files in the active workspace for the '#' autocomplete."""
+    ws_name = room_settings.get("active_workspace")
+    if not ws_name:
+        return []
+    
+    ws_path = None
+    for w in room_settings.get("workspaces", []):
+        if w["name"] == ws_name:
+            ws_path = Path(w["path"])
+            break
+            
+    if not ws_path or not ws_path.exists():
+        return []
+        
+    files = []
+    try:
+        # Scan for files, excluding hidden ones and limiting to 500 for UI performance
+        for p in ws_path.rglob("*"):
+            if p.is_file() and not any(part.startswith(".") for part in p.parts):
+                rel = p.relative_to(ws_path)
+                files.append(str(rel).replace("\\", "/"))
+                if len(files) >= 500:
+                    break
+    except Exception as e:
+        log.error(f"Error listing workspace files: {e}")
+        
+    return files
+
+
 @app.get("/api/agent-types")
 async def get_agent_types():
     """Return list of available agent types and modes from config."""

@@ -110,6 +110,7 @@ interface ChatStore {
   activeWorkspace: string | null;
   pinnedAgents: string[];
   agentPositions: Record<string, { x: number, y: number }>;
+  workspaceFiles: string[];
   
   // Shared Socket Ref
   socket: WebSocket | null;
@@ -133,6 +134,7 @@ interface ChatStore {
   renameSender: (oldName: string, newName: string) => void;
   setSoundPrefs: (prefs: Record<string, string>) => void;
   setArchivedChannels: (channels: string[]) => void;
+  setWorkspaceFiles: (files: string[]) => void;
   
   setJobs: (jobs: Job[]) => void;
   updateJob: (job: Job) => void;
@@ -177,6 +179,7 @@ export const useStore = create<ChatStore>((set, get) => ({
   activeWorkspace: null,
   pinnedAgents: [],
   agentPositions: {},
+  workspaceFiles: [],
   socket: null,
 
   setSocket: (socket) => set({ socket }),
@@ -245,6 +248,7 @@ export const useStore = create<ChatStore>((set, get) => ({
       set({ soundPrefs });
   },
   setArchivedChannels: (archivedChannels) => set({ archivedChannels }),
+  setWorkspaceFiles: (workspaceFiles) => set({ workspaceFiles }),
 
   setJobs: (jobs) => set({ jobs }),
   updateJob: (job) => set((state) => {

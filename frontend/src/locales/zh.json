@@ -30,6 +30,8 @@
     "unpin": "取消置顶",
     "details": "详细信息",
     "attach_file": "上传文件",
+    "clear_chat": "清空频道历史",
+    "confirm_clear_chat": "确定要清空当前频道的对话历史吗？该操作不可撤销。",
     "newline_hint": "Shift + Enter 换行",
     "replying_to": "回复 {{sender}}",
     "back": "返回"
@@ -37,6 +39,7 @@
   "input": {
     "placeholder": "与 #{{channel}} 通信...",
     "select_agent": "选择目标智能体",
+    "select_reference": "引用规则或任务",
     "system_commands": "系统命令",
     "drop_to_upload": "松开上传",
     "commands": {

@@ -16,7 +16,6 @@ export const useWebSocket = () => {
     updateMessage,
     removeMessage,
     soundPrefs,
-    currentChannel: activeChannel,
     setSocket,
     setCurrentChannel
   } = useStore();

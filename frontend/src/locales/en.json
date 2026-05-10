@@ -30,6 +30,8 @@
     "unpin": "Unpin",
     "details": "Details",
     "attach_file": "Attach file",
+    "clear_chat": "Wipe channel history",
+    "confirm_clear_chat": "Are you sure you want to clear the conversation history for this channel? This action cannot be undone.",
     "upload": "Import Image",
     "newline_hint": "Shift + Enter for newline",
     "replying_to": "Replying to {{sender}}",
@@ -38,6 +40,7 @@
   "input": {
     "placeholder": "Communicate with #{{channel}}...",
     "select_agent": "Select Target Agent",
+    "select_reference": "Reference Rule or Task",
     "system_commands": "System Commands",
     "drop_to_upload": "Drop to upload",
     "commands": {

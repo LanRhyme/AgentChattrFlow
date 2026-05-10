@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Command, User, Terminal, X, File, Image as ImageIcon, Reply } from 'lucide-react';
+import { Send, Paperclip, Command, User, Terminal, X, File, Image as ImageIcon, Reply, Trash2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -23,12 +23,13 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
   const [isUploading, setIsUploading] = useState(false);
   const [activeMentions, setActiveMentions] = useState<Set<string>>(new Set());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const highlightRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { currentChannel, agents, replyingTo, setReplyingTo } = useStore();
+  const { currentChannel, agents, replyingTo, setReplyingTo, jobs, rules, activeWorkspace, workspaceFiles, setWorkspaceFiles } = useStore();
   const { t } = useTranslation();
   
   // Autocomplete State
-  const [suggestionType, setSuggestionType] = useState<'agent' | 'command' | null>(null);
+  const [suggestionType, setSuggestionType] = useState<'agent' | 'command' | 'reference' | null>(null);
   const [suggestionQuery, setSuggestionQuery] = useState('');
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [cursorPos, setCursorPos] = useState(0);
@@ -43,23 +44,54 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
 
   const agentSuggestions = Object.keys(agents)
     .filter(a => a.toLowerCase().includes(suggestionQuery.toLowerCase()))
-    .map(a => ({ name: `@${a}`, desc: agents[a].label || 'Agent', color: agents[a].color }));
+    .map(a => ({ name: `@${a}`, desc: agents[a].label || 'Agent', color: agents[a].color, type: 'agent' }));
 
   const commandSuggestions = availableCommands
-    .filter(c => c.name.toLowerCase().includes(suggestionQuery.toLowerCase()));
+    .filter(c => c.name.toLowerCase().includes(suggestionQuery.toLowerCase()))
+    .map(c => ({ ...c, type: 'command' }));
 
-  const currentSuggestions = suggestionType === 'agent' ? agentSuggestions : commandSuggestions;
+  const referenceSuggestions = [
+    ...rules.map(r => ({ name: `#rule:${r.id}`, desc: r.text.slice(0, 50) + (r.text.length > 50 ? '...' : ''), type: 'rule' })),
+    ...jobs.map(j => ({ name: `#task:${j.id}`, desc: j.title, type: 'task' })),
+    ...workspaceFiles.map(f => ({ name: `#file:${f}`, desc: f.split('/').pop(), type: 'file' }))
+  ].filter(s => s.name.toLowerCase().includes(suggestionQuery.toLowerCase()) || (s.desc && s.desc.toLowerCase().includes(suggestionQuery.toLowerCase())));
+
+  const currentSuggestions = suggestionType === 'agent' 
+    ? agentSuggestions 
+    : suggestionType === 'command' 
+      ? commandSuggestions 
+      : referenceSuggestions;
 
   useEffect(() => {
     setSuggestionIndex(0);
   }, [suggestionQuery, suggestionType]);
+
+  useEffect(() => {
+    const fetchFiles = async () => {
+        if (!activeWorkspace) return;
+        try {
+            const token = (window as any).__SESSION_TOKEN__ || '';
+            const response = await fetch('/api/workspaces/files', {
+                headers: { 'X-Session-Token': token }
+            });
+            if (response.ok) {
+                const files = await response.json();
+                setWorkspaceFiles(files);
+            }
+        } catch (error) {
+            console.error('Error fetching workspace files:', error);
+        }
+    };
+    fetchFiles();
+  }, [activeWorkspace, setWorkspaceFiles]);
 
   const insertSuggestion = (suggestion: string) => {
     if (!textareaRef.current) return;
     
     // Find where the trigger started
     const beforeCursor = text.slice(0, cursorPos);
-    const triggerIndex = beforeCursor.lastIndexOf(suggestionType === 'agent' ? '@' : '/');
+    const triggerChar = suggestionType === 'agent' ? '@' : (suggestionType === 'command' ? '/' : '#');
+    const triggerIndex = beforeCursor.lastIndexOf(triggerChar);
     
     if (triggerIndex !== -1) {
       const newText = text.slice(0, triggerIndex) + suggestion + ' ' + text.slice(cursorPos);
@@ -163,6 +195,12 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
       setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleClear = () => {
+    if (window.confirm(t('common.confirm_clear_chat') || 'Are you sure you want to clear the conversation?')) {
+        onSendMessage('/clear');
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (suggestionType && currentSuggestions.length > 0) {
       if (e.key === 'ArrowDown') {
@@ -187,9 +225,52 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
       }
     }
 
+    // Atomic deletion for tokens
+    if (e.key === 'Backspace' && !suggestionType) {
+        const pos = textareaRef.current?.selectionStart || 0;
+        const end = textareaRef.current?.selectionEnd || 0;
+        
+        if (pos === end && pos > 0) {
+            const textBefore = text.slice(0, pos);
+            // Match token ending at cursor, optional trailing space included.
+            const tokenMatch = textBefore.match(/((?:^|\s)(?:@|#|\/)[^\s]+ ?)$/);
+            
+            if (tokenMatch) {
+                const fullToken = tokenMatch[1];
+                // Only if it's a real token (has minimum content after prefix)
+                if (fullToken.trim().length > 1) {
+                    const newText = text.slice(0, pos - fullToken.length) + text.slice(pos);
+                    setText(newText);
+                    e.preventDefault();
+                    
+                    setTimeout(() => {
+                        const newPos = Math.max(0, pos - fullToken.length);
+                        textareaRef.current?.setSelectionRange(newPos, newPos);
+                        if (textareaRef.current) {
+                            textareaRef.current.style.height = 'auto';
+                            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+                        }
+                    }, 0);
+                    return;
+                }
+            }
+        }
+    }
+
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
     if (e.key === 'Enter' && !e.shiftKey && !suggestionType) {
+      if (isMobile) {
+        return;
+      }
       e.preventDefault();
       handleSubmit();
+    }
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+    if (highlightRef.current) {
+      highlightRef.current.scrollTop = e.currentTarget.scrollTop;
     }
   };
 
@@ -199,16 +280,13 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
     e.target.style.height = 'auto';
     e.target.style.height = `${e.target.scrollHeight}px`;
 
-    // Check for autocomplete triggers
     const pos = e.target.selectionStart;
     setCursorPos(pos);
     const textBeforeCursor = newText.slice(0, pos);
     
-    // Match the last word being typed
-    const match = textBeforeCursor.match(/(?:^|\s)([@/])([^\s]*)$/);
+    const match = textBeforeCursor.match(/(?:^|\s)([@/#])([^\s]*)$/);
     if (match) {
-      setSuggestionType(match[1] === '@' ? 'agent' : 'command');
-      setSuggestionQuery(match[1] + match[2]);
+      setSuggestionType(match[1] === '@' ? 'agent' : (match[1] === '/' ? 'command' : 'reference'));
       setSuggestionQuery(match[2]);
     } else {
       setSuggestionType(null);
@@ -217,14 +295,14 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
 
   const handleClick = (e: React.MouseEvent<HTMLTextAreaElement>) => {
       setCursorPos(e.currentTarget.selectionStart);
-      setSuggestionType(null); // Simple dismiss on click for now
+      setSuggestionType(null);
   }
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     
     let finalText = text;
-    if (activeMentions.size > 0) {
+    if (activeMentions.size > 0 && !text.startsWith('/')) {
         const lowerText = text.toLowerCase();
         const missing = Array.from(activeMentions).filter(name => !lowerText.includes(`@${name.toLowerCase()}`));
         if (missing.length > 0) {
@@ -240,6 +318,41 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
       setReplyingTo(null);
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
     }
+  };
+
+  const renderHighlightedText = () => {
+    if (!text) return <span className="opacity-40">{t('input.placeholder', { channel: currentChannel })}</span>;
+    
+    // Split by tokens, ensuring leading spaces are NOT part of the token span
+    const parts = text.split(/((?:^|\s)(?:@|#|\/)[^\s]+)/g);
+    
+    return parts.map((part, i) => {
+      const match = part.match(/^(\s?)([@#/])([^\s]+)$/);
+      
+      if (match) {
+        const [_, leadingSpace, trigger, content] = match;
+        const colorClass = trigger === '@' ? "text-primary bg-primary/10" : 
+                           trigger === '#' ? "text-secondary bg-secondary/10" : 
+                           "text-amber-500 bg-amber-500/10 italic";
+        
+        return (
+          <React.Fragment key={i}>
+            {leadingSpace}
+            <span 
+              className={cn("rounded-[4px] antialiased transition-colors", colorClass)}
+              style={{ 
+                boxShadow: '0 0 0 1px rgba(0,0,0,0.05)',
+                padding: '1px 0' 
+              }}
+            >
+              {trigger}{content}
+            </span>
+          </React.Fragment>
+        );
+      }
+      
+      return <span key={i} className="text-on-surface">{part}</span>;
+    });
   };
 
   return (
@@ -274,7 +387,7 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
           <div className="absolute bottom-full left-0 mb-4 w-[calc(100vw-2rem)] lg:w-80 bg-brand-panel border border-brand-border rounded-[24px] shadow-[0_16px_40px_-12px_rgba(0,0,0,0.8)] overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 z-50 ring-1 ring-white/5">
               <div className="px-4 py-3 border-b border-brand-border/30 bg-surface-low/30">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant">
-                      {suggestionType === 'agent' ? t('input.select_agent') : t('input.system_commands')}
+                      {suggestionType === 'agent' ? t('input.select_agent') : (suggestionType === 'command' ? t('input.system_commands') : t('input.select_reference'))}
                   </p>
               </div>
               <div className="max-h-60 overflow-y-auto custom-scrollbar p-2">
@@ -293,9 +406,13 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
                               <div className="w-8 h-8 rounded-full flex items-center justify-center bg-surface-low/50 shrink-0" style={{ color: (item as any).color }}>
                                   <User size={16} />
                               </div>
-                          ) : (
+                          ) : suggestionType === 'command' ? (
                               <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary/10 text-primary shrink-0">
                                   <Terminal size={16} />
+                              </div>
+                          ) : (
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-secondary/10 text-secondary shrink-0">
+                                  {item.type === 'rule' ? <File size={16} /> : (item.type === 'task' ? <Command size={16} /> : <File size={16} />)}
                               </div>
                           )}
                           <div className="min-w-0">
@@ -330,7 +447,6 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
           </div>
       )}
 
-      {/* M3 Elevation Shadow & Glow */}
       <div className="absolute -inset-1 bg-primary/10 rounded-[32px] blur-2xl opacity-0 group-focus-within:opacity-100 transition duration-700 pointer-events-none" />
       
       <div 
@@ -343,7 +459,6 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
-        {/* Hidden File Input */}
         <input 
             type="file" 
             ref={fileInputRef} 
@@ -352,7 +467,6 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
             onChange={handleFileSelect} 
         />
 
-        {/* Toolbar */}
         <div className="flex items-center gap-1 px-3 lg:px-5 py-2 border-b border-brand-border/30 bg-surface-low/30">
             <button 
                 type="button" 
@@ -362,6 +476,14 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
             >
                 <Paperclip size={16} />
             </button>
+            <button 
+                type="button" 
+                onClick={handleClear}
+                className="p-2 text-on-surface-variant hover:text-red-500 hover:bg-on-surface/5 rounded-xl transition-all" 
+                title={t('common.clear_chat')}
+            >
+                <Trash2 size={16} />
+            </button>
             
             <div className="ml-auto flex items-center gap-3">
                 <span className="text-[9px] text-on-surface-variant/40 font-black uppercase tracking-[0.2em] flex items-center gap-1.5 opacity-60">
@@ -370,7 +492,6 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
             </div>
         </div>
 
-        {/* Attachments Preview Area */}
         {attachments.length > 0 && (
             <div className="flex flex-wrap gap-2 lg:gap-3 p-3 lg:p-4 pb-0 border-b border-brand-border/30">
                 {attachments.map((att, idx) => (
@@ -398,8 +519,7 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
             </div>
         )}
 
-        {/* Input Row */}
-        <form onSubmit={handleSubmit} className="flex gap-3 lg:gap-4 items-end p-3 lg:p-5 relative">
+        <form onSubmit={handleSubmit} className="flex gap-3 lg:gap-4 items-end p-3 lg:p-5 relative min-h-[64px]">
           {isDragging && (
               <div className="absolute inset-0 bg-primary/10 backdrop-blur-sm z-10 flex items-center justify-center">
                   <div className="bg-primary text-brand-bg px-6 py-2 rounded-full font-black text-xs uppercase tracking-widest shadow-xl flex items-center gap-2">
@@ -407,18 +527,42 @@ export const MessageInput = ({ onSendMessage }: { onSendMessage: (text: string, 
                   </div>
               </div>
           )}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 relative">
+            <div 
+              ref={highlightRef}
+              className="absolute inset-0 pointer-events-none whitespace-pre-wrap break-words text-[16px] leading-[1.5] p-0 overflow-hidden text-on-surface font-sans"
+              aria-hidden="true"
+              style={{ 
+                  fontFamily: 'inherit', 
+                  letterSpacing: 'normal',
+                  wordSpacing: 'normal',
+                  fontVariantLigatures: 'none',
+                  textRendering: 'optimizeLegibility',
+                  padding: '0' 
+              }}
+            >
+              {renderHighlightedText()}
+            </div>
             <textarea
               ref={textareaRef}
               rows={1}
               value={text}
               onChange={handleChange}
               onKeyDown={handleKeyDown}
+              onScroll={handleScroll}
               onClick={handleClick}
               onKeyUp={(e) => setCursorPos(e.currentTarget.selectionStart)}
               onPaste={handlePaste}
               placeholder={t('input.placeholder', { channel: currentChannel })}
-              className="w-full bg-transparent border-none focus:ring-0 focus:outline-none text-[16px] text-on-surface placeholder-on-surface-variant/40 resize-none max-h-60 custom-scrollbar leading-relaxed"
+              className="w-full bg-transparent border-none focus:ring-0 focus:outline-none text-[16px] text-transparent caret-on-surface resize-none max-h-60 custom-scrollbar leading-[1.5] p-0 block relative z-10"
+              style={{ 
+                  fontFamily: 'inherit', 
+                  letterSpacing: 'normal',
+                  wordSpacing: 'normal',
+                  fontVariantLigatures: 'none',
+                  textRendering: 'optimizeLegibility',
+                  padding: '0'
+              }}
             />
           </div>
           <button
