@@ -379,27 +379,53 @@ export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
         title: t('settings.network'),
         icon: RefreshCw,
         fields: (
-          <div className="grid grid-cols-2 gap-4">
-              <Dropdown 
-                  label={t('settings.history_depth')}
-                  value={String(settings.history_limit || 'all')}
-                  onChange={(val) => handleSave('history_limit', val)}
-                  options={[
-                      { id: 'all', name: t('settings.history.all') },
-                      { id: '100', name: t('settings.history.100') },
-                      { id: '500', name: t('settings.history.500') }
-                  ]}
-              />
-              <Dropdown 
-                  label={t('settings.neural_sync')}
-                  value={String(settings.rules_refresh_interval || '10')}
-                  onChange={(val) => handleSave('rules_refresh_interval', val)}
-                  options={[
-                      { id: '0', name: t('settings.sync.event') },
-                      { id: '10', name: t('settings.sync.batch10') },
-                      { id: '20', name: t('settings.sync.batch20') }
-                  ]}
-              />
+          <div className="grid grid-cols-1 gap-6">
+              <div className="space-y-2">
+                  <Dropdown 
+                      label={t('settings.history_depth') || 'History Context Depth'}
+                      value={String(settings.history_limit || 'all')}
+                      onChange={(val) => handleSave('history_limit', val)}
+                      options={[
+                          { id: 'all', name: t('settings.history.all') || 'All Messages' },
+                          { id: '100', name: t('settings.history.100') || '100 Messages' },
+                          { id: '500', name: t('settings.history.500') || '500 Messages' }
+                      ]}
+                  />
+                  <p className="text-[10px] text-on-surface-variant/70 leading-relaxed px-1">
+                     Determines the maximum number of recent messages sent to agents via MCP as conversation context. Smaller values save tokens; 'All' provides infinite memory.
+                  </p>
+              </div>
+              <div className="space-y-2">
+                  <Dropdown 
+                      label={t('settings.neural_sync') || 'Neural Sync Interval'}
+                      value={String(settings.rules_refresh_interval || '10')}
+                      onChange={(val) => handleSave('rules_refresh_interval', val)}
+                      options={[
+                          { id: '0', name: t('settings.sync.event') || 'Event-driven (0)' },
+                          { id: '10', name: t('settings.sync.batch10') || 'Batch every 10' },
+                          { id: '20', name: t('settings.sync.batch20') || 'Batch every 20' }
+                      ]}
+                  />
+                  <p className="text-[10px] text-on-surface-variant/70 leading-relaxed px-1">
+                     Controls how frequently system rules and states are synchronized with the local neural cache. Event-based is immediate but uses more bandwidth.
+                  </p>
+              </div>
+              <div className="space-y-2">
+                  <Dropdown 
+                      label="Max Agent Hops"
+                      value={String(settings.max_agent_hops || '10')}
+                      onChange={(val) => handleSave('max_agent_hops', val)}
+                      options={[
+                          { id: '5', name: '5 Hops (Conservative)' },
+                          { id: '10', name: '10 Hops (Default)' },
+                          { id: '20', name: '20 Hops (Extended)' },
+                          { id: '50', name: '50 Hops (Maximum)' }
+                      ]}
+                  />
+                  <p className="text-[10px] text-on-surface-variant/70 leading-relaxed px-1">
+                     Limits the maximum number of consecutive agent-to-agent mentions in a single automated chain reaction to prevent infinite loops.
+                  </p>
+              </div>
           </div>
         )
       }

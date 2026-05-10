@@ -73,7 +73,7 @@ export const useWebSocket = () => {
     const { 
       updateJob, removeJob, setJobs,
       updateRule, removeRule, setRules,
-      setSchedules, settings
+      setSchedules, settings, currentChannel
     } = useStore.getState();
 
     switch (event.type) {
@@ -85,7 +85,7 @@ export const useWebSocket = () => {
             const isSystem = msg.type === 'system' || msg.type === 'join' || msg.type === 'leave' || msg.type === 'summary';
             
             if (!isSelf && !isSystem) {
-                if (msg.channel !== activeChannel) {
+                if (msg.channel !== currentChannel) {
                     playCrossChannelSound();
                 } else if (!document.hasFocus()) {
                     playNotificationSound(msg.sender);

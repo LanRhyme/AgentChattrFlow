@@ -430,23 +430,27 @@ def _resolve_attachments(attachments: list[dict]) -> list[dict]:
 
 
 def _serialize_messages(msgs: list[dict]) -> str:
-    """Serialize store messages into MCP chat_read output shape."""
+    """Serialize store messages into an ultra-compact format to save tokens."""
+    if not msgs:
+        return "[No messages]"
+
     out = []
     for m in msgs:
-        entry = {
-            "id": m["id"],
-            "sender": m["sender"],
-            "text": m["text"],
-            "type": m["type"],
-            "time": m["time"],
-            "channel": _unqualify_channel(m.get("channel", "general")),
-        }
+        # Single-line header: #ID [Channel] Sender (Time):
+        ch = _unqualify_channel(m.get('channel', 'general'))
+        reply = f"->#{m['reply_to']}" if m.get("reply_to") is not None else ""
+        header = f"#{m['id']}{reply} [{ch}] {m['sender']} ({m['time']}):"
+
+        content = m["text"]
         if m.get("attachments"):
-            entry["attachments"] = _resolve_attachments(m["attachments"])
-        if m.get("reply_to") is not None:
-            entry["reply_to"] = m["reply_to"]
-        out.append(entry)
-    return json.dumps(out, ensure_ascii=False) if out else ""
+            att_info = ",".join(f"{a.get('type','file')}:{a.get('name','?')}" for a in m["attachments"])
+            content += f" [Atts: {att_info}]"
+
+        out.append(f"{header} {content}")
+
+    # Compact hint to prevent re-scanning
+    res = "\n".join(out)
+    return f"{res}\n[End of history]"
 
 
 def _load_cursors():
@@ -587,7 +591,7 @@ def chat_read(
     job_id: int = 0,
     ctx: Context | None = None,
 ) -> str:
-    """Read chat messages. Returns JSON array with: id, sender, text, type, time, channel.
+    """Read chat messages. Returns plain-text formatted message history.
 
     Smart defaults:
     - First call with sender: returns last `limit` messages (full context).
@@ -678,17 +682,15 @@ def chat_read(
     serialized = _serialize_messages(msgs)
 
     # Escalating empty-read hints to discourage polling loops
-    if not serialized and sender:
+    if not msgs and sender:
         _empty_read_count[sender] = _empty_read_count.get(sender, 0) + 1
         n = _empty_read_count[sender]
         if n == 1:
-            serialized = "No new messages. Do not poll — wait for your next prompt."
+            serialized = "No new messages. Do not poll — wait for next prompt."
         elif n == 2:
-            serialized = ("No new messages. You have read with no results twice — "
-                          "stop polling and wait for a trigger.")
+            serialized = "No new messages (2nd empty read). Stop polling."
         else:
-            serialized = ("No new messages. STOP. Repeated empty reads waste tokens. "
-                          "Wait for your next prompt.")
+            serialized = "STOP. Repeated empty reads waste tokens. Wait for next prompt."
     elif sender:
         _empty_read_count[sender] = 0
 
@@ -698,7 +700,7 @@ def chat_read(
         if multi:
             inst = registry.get_instance(sender)
             if inst:
-                breadcrumb = f"[identity: {inst['name']} | label: {inst['label']}]"
+                breadcrumb = f"[{inst['name']}|{inst['label']}]"
                 serialized = f"{breadcrumb}\n{serialized}"
     return serialized
 
@@ -723,6 +725,18 @@ def chat_resync(
     msgs = store.get_recent(limit, channel=qualified_ch)
     _update_cursor(sender, msgs, ch)
     serialized = _serialize_messages(msgs)
+
+    # Escalating empty-read hints (same as chat_read)
+    if not msgs and sender:
+        _empty_read_count[sender] = _empty_read_count.get(sender, 0) + 1
+        n = _empty_read_count[sender]
+        if n == 1:
+            serialized = "No new messages. Do not poll — wait for your next prompt."
+        else:
+            serialized = "No new messages. STOP polling. Wait for next prompt."
+    elif sender:
+        _empty_read_count[sender] = 0
+
     return serialized
 
 

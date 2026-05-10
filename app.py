@@ -7,6 +7,7 @@ import sys
 import threading
 import uuid
 import logging
+import shutil
 from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File
@@ -2740,8 +2741,8 @@ async def launch_agent(request: Request):
             wt_path = shutil.which("wt.exe")
             if wt_path:
                 # -w 0 means "use the first existing window", nt means "new-tab"
-                # We wrap the command in a single string for wt to execute properly
-                wt_cmd = [wt_path, "-w", "0", "nt", *cmd]
+                # -- separates wt arguments from the actual command
+                wt_cmd = [wt_path, "-w", "0", "nt", "--", *cmd]
                 subprocess.Popen(wt_cmd)
             else:
                 subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)

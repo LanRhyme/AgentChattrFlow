@@ -90,6 +90,7 @@ interface ChatStore {
     contrast?: string;
     history_limit?: string | number;
     rules_refresh_interval?: string | number;
+    max_agent_hops?: string | number;
     bg_image?: string;
     bg_opacity?: number;
     bg_blur?: number;
