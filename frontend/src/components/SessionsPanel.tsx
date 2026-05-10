@@ -176,7 +176,7 @@ export const SessionsPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
                                             label={role}
                                             value={cast[role] || ''}
                                             onChange={(val) => setCast({ ...cast, [role]: val })}
-                                            options={[...availableAgents, settings.username].map(a => ({ id: a, name: a }))}
+                                            options={[...availableAgents, settings.username].filter((a): a is string => !!a).map(a => ({ id: a, name: a }))}
                                         />
                                     ))}
                                 </div>

@@ -63,6 +63,9 @@ room_settings: dict = {
     "active_workspace": None,
     "workspace_channels": {},  # { workspace_name: [channels] }
     "workspace_archived": {},  # { workspace_name: [channels] }
+    "bg_image": "",
+    "bg_opacity": 0.4,
+    "bg_blur": 10,
 }
 
 # Channel validation
@@ -1298,6 +1301,18 @@ async def websocket_endpoint(websocket: WebSocket):
                             room_settings["history_limit"] = max(1, min(val_int, 10000))
                         except (ValueError, TypeError):
                             pass
+                if "bg_image" in new:
+                    room_settings["bg_image"] = str(new["bg_image"])
+                if "bg_opacity" in new:
+                    try:
+                        room_settings["bg_opacity"] = float(new["bg_opacity"])
+                    except (ValueError, TypeError):
+                        pass
+                if "bg_blur" in new:
+                    try:
+                        room_settings["bg_blur"] = int(new["bg_blur"])
+                    except (ValueError, TypeError):
+                        pass
                 if "custom_roles" in new and isinstance(new["custom_roles"], list):
                     room_settings["custom_roles"] = [
                         str(r).strip()[:20] for r in new["custom_roles"]

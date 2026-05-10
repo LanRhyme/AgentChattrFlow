@@ -1,3 +1,10 @@
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+export function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+}
+
 export type ThemeMode = 'light' | 'dark' | 'system';
 export type ThemeColor = 'green' | 'blue' | 'purple' | 'rose';
 export type PaletteStyle = 'tonal_spot' | 'vibrant' | 'expressive' | 'neutral';

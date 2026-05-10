@@ -1,6 +1,6 @@
 import { Fragment, useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { X, User, RefreshCw, Smartphone, Monitor, Volume2, Globe, Terminal, Moon, Laptop, Check } from 'lucide-react';
+import { X, User, RefreshCw, Smartphone, Monitor, Volume2, Globe, Terminal, Moon, Laptop, Check, Image as ImageIcon, Upload, Trash2 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useTranslation } from 'react-i18next';
@@ -8,7 +8,7 @@ import { ApiAgentManager } from './ApiAgentManager';
 import { Dropdown } from './Dropdown';
 
 export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
-  const { settings, soundPrefs, setSoundPrefs, agents } = useStore();
+  const { settings, soundPrefs, setSoundPrefs, agents, updateSettings } = useStore();
   const { sendAction } = useWebSocket();
   const { t, i18n } = useTranslation();
   const [activeSection, setActiveSection] = useState(0);
@@ -17,6 +17,9 @@ export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
   const [localTheme, setLocalTheme] = useState(settings.theme || 'dark');
   const [localColor, setLocalColor] = useState(settings.theme_color || 'green');
   const [localStyle, setLocalStyle] = useState(settings.palette_style || 'tonal_spot');
+  const [localBgImage, setLocalBgImage] = useState(settings.bg_image || '');
+  const [localBgOpacity, setLocalBgOpacity] = useState(settings.bg_opacity ?? 0.4);
+  const [localBgBlur, setLocalBgBlur] = useState(settings.bg_blur ?? 10);
 
   // Sync local state with store when dialog opens or settings change
   useEffect(() => {
@@ -24,11 +27,26 @@ export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
           setLocalTheme(settings.theme || 'dark');
           setLocalColor(settings.theme_color || 'green');
           setLocalStyle(settings.palette_style || 'tonal_spot');
+          setLocalBgImage(settings.bg_image || '');
+          setLocalBgOpacity(settings.bg_opacity ?? 0.4);
+          setLocalBgBlur(settings.bg_blur ?? 10);
       }
-  }, [isOpen, settings.theme, settings.theme_color, settings.palette_style]);
+  }, [isOpen, settings.theme, settings.theme_color, settings.palette_style, settings.bg_image, settings.bg_opacity, settings.bg_blur]);
 
   const handleSave = (key: string, value: any) => {
+    updateSettings({ [key]: value });
     sendAction({ type: 'update_settings', data: { [key]: value } });
+  };
+
+  const handleLivePreview = (key: string, value: number) => {
+    const root = document.documentElement;
+    if (key === 'bg_opacity') {
+        setLocalBgOpacity(value);
+        root.style.setProperty('--bg-opacity', String(value));
+    } else if (key === 'bg_blur') {
+        setLocalBgBlur(value);
+        root.style.setProperty('--bg-blur', `${value}px`);
+    }
   };
 
   const handleSoundChange = (key: string, value: string) => {
@@ -55,6 +73,19 @@ export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
   const applyPaletteStyle = (style: string) => {
       setLocalStyle(style);
       handleSave('palette_style', style);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+          const dataUrl = event.target?.result as string;
+          setLocalBgImage(dataUrl);
+          handleSave('bg_image', dataUrl);
+      };
+      reader.readAsDataURL(file);
   };
 
   const THEME_COLORS = [
@@ -186,6 +217,86 @@ export const SettingsDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: 
             </div>
         </div>
       )
+    },
+    {
+        id: 'background',
+        title: t('settings.background') || 'Background',
+        icon: ImageIcon,
+        fields: (
+            <div className="space-y-8">
+                <div className="space-y-3">
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant px-1">{t('settings.bg_image')}</label>
+                    <div className="flex gap-3">
+                        <div className="relative flex-1">
+                            <input
+                                type="text"
+                                value={localBgImage}
+                                onChange={(e) => setLocalBgImage(e.target.value)}
+                                onBlur={() => handleSave('bg_image', localBgImage)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleSave('bg_image', localBgImage);
+                                }}
+                                className="w-full bg-on-surface/[0.03] border border-brand-border rounded-2xl px-5 py-3 text-sm text-on-surface focus:border-primary/50 outline-none transition-all pr-12"
+                                placeholder="https://images.unsplash.com/..."
+                            />
+                            {localBgImage && (
+                                <button 
+                                    onClick={() => { setLocalBgImage(''); handleSave('bg_image', ''); }}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-on-surface-variant hover:text-red-500 transition-colors"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            )}
+                        </div>
+                        <label className="flex items-center justify-center gap-2 px-5 py-3 bg-primary/10 border border-primary/20 rounded-2xl text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/20 transition-all cursor-pointer">
+                            <Upload size={14} /> {t('common.upload') || 'Upload'}
+                            <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
+                        </label>
+                    </div>
+                    {localBgImage && (
+                        <div className="mt-4 aspect-video rounded-3xl overflow-hidden border border-brand-border bg-on-surface/[0.03] relative group">
+                            <img src={localBgImage} alt="Preview" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-white">Preview</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                        <div className="flex justify-between px-1">
+                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant">{t('settings.bg_opacity')}</label>
+                            <span className="text-[10px] font-bold text-primary">{Math.round(localBgOpacity * 100)}%</span>
+                        </div>
+                        <input 
+                            type="range" 
+                            min="0" max="1" step="0.01"
+                            value={localBgOpacity}
+                            onChange={(e) => handleLivePreview('bg_opacity', parseFloat(e.target.value))}
+                            onMouseUp={() => handleSave('bg_opacity', localBgOpacity)}
+                            onTouchEnd={() => handleSave('bg_opacity', localBgOpacity)}
+                            className="w-full h-1.5 bg-on-surface/[0.08] rounded-full appearance-none cursor-pointer accent-primary"
+                        />
+                    </div>
+                    <div className="space-y-4">
+                        <div className="flex justify-between px-1">
+                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant">{t('settings.bg_blur')}</label>
+                            <span className="text-[10px] font-bold text-primary">{localBgBlur}px</span>
+                        </div>
+                        <input 
+                            type="range" 
+                            min="0" max="40" step="1"
+                            value={localBgBlur}
+                            onChange={(e) => handleLivePreview('bg_blur', parseInt(e.target.value))}
+                            onMouseUp={() => handleSave('bg_blur', localBgBlur)}
+                            onTouchEnd={() => handleSave('bg_blur', localBgBlur)}
+                            className="w-full h-1.5 bg-on-surface/[0.08] rounded-full appearance-none cursor-pointer accent-primary"
+                        />
+                    </div>
+                </div>
+            </div>
+        )
     },
     {
       id: 'identity',

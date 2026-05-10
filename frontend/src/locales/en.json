@@ -30,6 +30,7 @@
     "unpin": "Unpin",
     "details": "Details",
     "attach_file": "Attach file",
+    "upload": "Import Image",
     "newline_hint": "Shift + Enter for newline",
     "replying_to": "Replying to {{sender}}",
     "back": "Back"

@@ -81,7 +81,19 @@ interface ChatStore {
   messages: Message[];
   agents: Record<string, AgentInfo>;
   status: Record<string, any>;
-  settings: any;
+  settings: {
+    username?: string;
+    theme?: string;
+    theme_color?: string;
+    palette_style?: string;
+    font?: string;
+    contrast?: string;
+    history_limit?: string | number;
+    rules_refresh_interval?: string | number;
+    bg_image?: string;
+    bg_opacity?: number;
+    bg_blur?: number;
+  };
   channels: string[];
   archivedChannels: string[];
   currentChannel: string;
@@ -113,6 +125,7 @@ interface ChatStore {
   setStatus: (status: Record<string, any>) => void;
   setAgents: (agents: Record<string, AgentInfo>) => void;
   setSettings: (settings: any) => void;
+  updateSettings: (updates: Partial<ChatStore['settings']>) => void;
   setCurrentChannel: (channel: string) => void;
   setTyping: (agent: string, isTyping: boolean) => void;
   setReplyingTo: (message: Message | null) => void;
@@ -142,7 +155,11 @@ export const useStore = create<ChatStore>((set, get) => ({
   messages: [],
   agents: {},
   status: {},
-  settings: { username: 'user' },
+  settings: { 
+    username: 'user',
+    bg_opacity: 0.4,
+    bg_blur: 10
+  },
   channels: ['general'],
   archivedChannels: [],
   currentChannel: 'general',
@@ -207,6 +224,9 @@ export const useStore = create<ChatStore>((set, get) => ({
           return next;
       });
   },
+  updateSettings: (updates: Partial<ChatStore['settings']>) => set((state) => ({
+      settings: { ...state.settings, ...updates }
+  })),
   setCurrentChannel: (currentChannel) => set({ currentChannel }),
   setTyping: (agent, isTyping) => set((state) => {
     const newTyping = new Set(state.typingAgents);

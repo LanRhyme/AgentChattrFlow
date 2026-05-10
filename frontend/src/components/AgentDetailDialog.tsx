@@ -67,6 +67,7 @@ export const AgentDetailDialog: React.FC<AgentDetailDialogProps> = ({ agentId, m
   };
 
   const onMouseUp = () => {
+    if (!draggingRef.current) return;
     draggingRef.current = null;
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('mouseup', onMouseUp);

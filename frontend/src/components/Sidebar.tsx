@@ -9,14 +9,9 @@ import { ArchiveDialog } from './ArchiveDialog';
 import { AddWorkspaceDialog } from './AddWorkspaceDialog';
 import { LaunchAgentDialog } from './LaunchAgentDialog';
 import { AgentDetailDialog } from './AgentDetailDialog';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useTranslation } from 'react-i18next';
-
-function cn(...inputs: any[]) {
-  return twMerge(clsx(inputs));
-}
+import { cn } from '../utils/theme';
 
 export const Sidebar = () => {
   const { channels, currentChannel, setCurrentChannel, agents, settings, status, workspaces, activeWorkspace, pinnedAgents } = useStore();
@@ -70,7 +65,17 @@ export const Sidebar = () => {
 
   return (
     <>
-      <aside className="w-[280px] bg-brand-panel border-r border-brand-border flex flex-col shrink-0 h-full overflow-hidden shadow-xl z-20">
+      <aside 
+        className={cn(
+          "w-[280px] border-r border-brand-border flex flex-col shrink-0 h-full overflow-hidden shadow-xl z-20 transition-all duration-700",
+          settings.bg_image ? "backdrop-blur-xl" : ""
+        )}
+        style={{
+          backgroundColor: settings.bg_image 
+            ? 'color-mix(in srgb, var(--brand-panel), transparent 40%)' 
+            : 'var(--brand-panel)'
+        }}
+      >
         <div className="px-8 py-10 group cursor-default">
             <h1 className="font-black text-on-surface text-2xl tracking-tighter leading-none">AgentChattrFlow</h1>
         </div>

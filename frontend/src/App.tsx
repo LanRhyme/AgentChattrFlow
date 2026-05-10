@@ -6,7 +6,7 @@ import { useWebSocket } from './hooks/useWebSocket';
 import { useStore } from './store/useStore';
 import { Hash, Zap, StopCircle, ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { applyThemeToDOM, setupSystemThemeListener } from './utils/theme';
+import { applyThemeToDOM, setupSystemThemeListener, cn } from './utils/theme';
 import { AgentDetailDialog } from './components/AgentDetailDialog';
 
 function App() {
@@ -48,13 +48,55 @@ function App() {
       }
   };
 
+  // Update CSS variables for background settings
+  useEffect(() => {
+      const root = document.documentElement;
+      root.style.setProperty('--bg-blur', `${settings.bg_blur ?? 10}px`);
+      root.style.setProperty('--bg-opacity', `${settings.bg_opacity ?? 0.4}`);
+  }, [settings.bg_blur, settings.bg_opacity]);
+
   return (
-    <div className="flex h-screen w-full bg-brand-bg text-on-surface overflow-hidden font-sans selection:bg-primary/30 relative">
+    <div 
+      className={cn(
+        "flex h-screen w-full text-on-surface overflow-hidden font-sans selection:bg-primary/30 relative transition-colors duration-700",
+        settings.bg_image ? "bg-transparent" : "bg-brand-bg"
+      )}
+    >
+      {/* Dynamic Background Layer */}
+      {settings.bg_image && (
+        <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+            <div 
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-1000 scale-105 will-change-[filter]"
+                style={{ 
+                    backgroundImage: `url(${settings.bg_image})`,
+                    filter: `blur(var(--bg-blur))`,
+                }}
+            />
+            <div 
+                className="absolute inset-0 transition-opacity duration-1000 will-change-opacity"
+                style={{ 
+                  backgroundColor: 'var(--brand-bg)',
+                  opacity: 'var(--bg-opacity)'
+                }}
+            />
+        </div>
+      )}
+
       <Sidebar />
       
-      <main className="flex-1 flex flex-col min-w-0 bg-brand-bg relative shadow-[inset_24px_0_40px_-20px_rgba(0,0,0,0.3)] transition-all duration-700">
+      <main 
+        className={cn(
+          "flex-1 flex flex-col min-w-0 relative shadow-[inset_24px_0_40px_-20px_rgba(0,0,0,0.3)] transition-all duration-700 z-10",
+          settings.bg_image ? "backdrop-blur-[4px]" : ""
+        )}
+        style={{
+          backgroundColor: settings.bg_image 
+            ? 'color-mix(in srgb, var(--brand-bg), transparent 60%)' 
+            : 'var(--brand-bg)'
+        }}
+      >
         {/* M3 Style Top Bar */}
-        <header className="h-16 border-b border-brand-border/30 flex items-center justify-between px-8 bg-brand-bg/60 backdrop-blur-2xl z-20 shrink-0">
+        <header className="h-16 border-b border-brand-border/30 flex items-center justify-between px-8 bg-brand-bg/40 backdrop-blur-2xl z-20 shrink-0">
           <div className="flex items-center gap-4 group cursor-default">
             <div className="w-10 h-10 rounded-2xl bg-surface-high flex items-center justify-center border border-brand-border/50 shadow-sm group-hover:border-primary/50 transition-all duration-500">
                 <Hash size={20} className="text-primary group-hover:scale-110 transition-transform" />
