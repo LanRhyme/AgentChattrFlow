@@ -16,7 +16,7 @@ class AgentTrigger:
         return self._registry.is_registered(name)
 
     def get_status(self) -> dict:
-        from mcp_bridge import is_online, is_active, get_role, _thoughts
+        from mcp_bridge import is_online, is_active, get_role, get_thoughts
         instances = self._registry.get_all()
         return {
             name: {
@@ -25,7 +25,7 @@ class AgentTrigger:
                 "label": info["label"],
                 "color": info["color"],
                 "role": get_role(name),
-                "thoughts": _thoughts.get(name, ""),
+                "thoughts": get_thoughts(name),
             }
             for name, info in instances.items()
         }

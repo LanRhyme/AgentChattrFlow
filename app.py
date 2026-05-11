@@ -329,6 +329,7 @@ def configure(cfg: dict, tok: str = ""):
     global session_store, session_engine, config, session_token
 
     # Set state object
+    config = cfg
     state.config = cfg
     state.session_token = tok
     session_token = tok
@@ -1148,11 +1149,17 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         auth_msg = await asyncio.wait_for(websocket.receive_json(), timeout=5.0)
     except Exception:
-        await websocket.close(code=4003, reason="forbidden: expected auth message")
+        try:
+            await websocket.close(code=4003, reason="forbidden: expected auth message")
+        except Exception:
+            pass
         return
 
     if auth_msg.get("type") != "auth" or auth_msg.get("token") != session_token:
-        await websocket.close(code=4003, reason="forbidden: invalid session token")
+        try:
+            await websocket.close(code=4003, reason="forbidden: invalid session token")
+        except Exception:
+            pass
         return
 
     ws_clients.add(websocket)

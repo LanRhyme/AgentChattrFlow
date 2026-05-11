@@ -189,8 +189,6 @@ def _resolve_tool_identity(
         resolved = registry.resolve_name(provided)
         if resolved != provided and registry.is_registered(resolved):
             provided = resolved
-        if registry.is_agent_family(provided):
-            return "", f"Error: authenticated agent session required for '{provided}'."
 
     if provided:
         _touch_presence(provided)
@@ -695,6 +693,10 @@ def set_active(name: str, active: bool):
 
 def is_active(name: str) -> bool:
     return identity.is_active(name)
+
+
+def get_thoughts(name: str) -> str:
+    return identity.get_thoughts(name)
 
 
 def chat_rules(
